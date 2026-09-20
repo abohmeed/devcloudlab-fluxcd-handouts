@@ -18,6 +18,21 @@ MASTHEAD='<a href="https://devcloudlab.com"><img src="../../assets/img/devcloudl
 FOOTIMG='<a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="88"></a>'
 FOOTCTA='<a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>'
 
+# --- prove the instrument is pointed at something ---------------------------
+# Without this, a missing or empty handouts/ printed "0 handouts checked /
+# ALL CLEAN" and exited 0 — a green result from a run that read nothing. Every
+# section must exist and hold at least one handout, so deleting a directory is
+# a failure rather than a silently smaller corpus.
+REQUIRED_SECTIONS="s01 s02 s03 s04 s05 s06 s07"
+[ -d handouts ] || { echo "FATAL: handouts/ does not exist — nothing was checked"; exit 2; }
+for s in $REQUIRED_SECTIONS; do
+  [ -d "handouts/$s" ] || { echo "FATAL: handouts/$s is missing — the corpus is not what this check covers"; exit 2; }
+  c=$(find "handouts/$s" -name '*.md' | wc -l | tr -d ' ')
+  [ "$c" -gt 0 ] || { echo "FATAL: handouts/$s holds no handouts"; exit 2; }
+done
+total=$(find handouts -name '*.md' | wc -l | tr -d ' ')
+[ "$total" -ge 40 ] || { echo "FATAL: found $total handouts, expected at least 40 — corpus shrank"; exit 2; }
+
 fail=0
 printf "%-58s %6s  %s\n" FILE WORDS ISSUES
 for f in $(find handouts -name '*.md' | sort); do
@@ -98,8 +113,23 @@ for f in $(find handouts -name '*.md' | sort); do
   # reader cannot tell a realistic fake from the real thing. Placeholders are
   # written in angle brackets. Caught on the first push attempt, by a Slack
   # token shape that was entirely fictional.
-  grep -qE 'xox[baprs]-[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{20,}|glpat-[A-Za-z0-9_-]{15,}|AKIA[0-9A-Z]{16}|hooks\.slack\.com/services/[A-Z0-9]{6,}' "$f" \
+  grep -qE 'xox[baprs]-[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{20,}|glpat-[A-Za-z0-9_-]{15,}|AKIA[0-9A-Z]{16}|hooks\.slack\.com/services/[A-Z0-9]{6,}|-----BEGIN [A-Z ]*PRIVATE KEY-----' "$f" \
     && issues="${issues}SECRET-SHAPED-STRING "
+
+  # A `kind: Secret` with a populated base64 `data:` block trips GitHub push
+  # protection too, and a course that teaches secrets has these legitimately.
+  # `stringData:` with an obvious placeholder is fine; real-looking base64 is not.
+  # A handout SHOULD show the real shape of a dockerconfigjson, so the rule is not
+  # "no base64" — it is "the base64 must decode to something visibly fake". The
+  # first version of this flagged the private-registry handout, whose blob decodes
+  # to REPLACE_ME:REPLACE_ME and is documented as a placeholder two lines above.
+  for blob in $(awk '/^```/{c=!c;next} c' "$f" \
+      | awk '/kind: Secret/{s=1} s&&/^[[:space:]]*data:/{d=1;next}
+             d&&/^[[:space:]]+[A-Za-z0-9._-]+:[[:space:]]*[A-Za-z0-9+\/]{24,}={0,2}[[:space:]]*$/{print $2}'); do
+    dec=$(printf '%s' "$blob" | base64 -d 2>/dev/null)
+    printf '%s' "$dec" | grep -qiE 'REPLACE_ME|PLACEHOLDER|CHANGE_?ME|EXAMPLE|<your|your-(user|token|password)|dXNlcm5hbWU' \
+      || issues="${issues}BASE64-SECRET-DATA "
+  done
 
   # --- the handout's own job --------------------------------------------
   printf '%s\n' "$body" | grep -qE 'https?://' || issues="${issues}no-references "

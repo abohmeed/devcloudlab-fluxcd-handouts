@@ -16,10 +16,22 @@ cd "$(dirname "$0")/.." || exit 1
 #   - anything containing $( : a fragment of a shell command, not a URL
 SKIP='example\.com|example-org|github\.com/example/|your-org|<your|my-org|localhost|127\.0\.0\.1|192\.168\.|cluster\.local|kubernetes\.default|:6443|\{|\$\(|registry\.gitlab\.com/<|ghcr\.io/<|hooks\.slack\.com/services/|token\.actions\.githubusercontent\.com|stefanprodan\.github\.io/podinfo|^https://$'
 
+# Prove the instrument is pointed at something. A missing handouts/ used to
+# print "checked 0 URLs; 0 bad / all reference links good" and exit 0.
+[ -d handouts ] || { echo "FATAL: handouts/ does not exist — no links were checked"; exit 2; }
+ALL=$(grep -rho 'https://[^)"`, <]*' handouts/ README.md 2>/dev/null | sed 's/[.,;:]*$//' | sort -u)
+[ "$(printf '%s\n' "$ALL" | grep -c .)" -ge 100 ] || {
+  echo "FATAL: only $(printf '%s\n' "$ALL" | grep -c .) URLs found across the corpus, expected 100+ — this run did not read the handouts"; exit 2; }
+
+# Print what is exempt, every run. An exemption that outlives the placeholder it
+# was written for is indistinguishable from coverage, so it has to stay visible.
+echo "skipped as illustrative (NOT verified):"
+printf '%s\n' "$ALL" | grep -E "$SKIP" | sed 's/^/  /'
+echo
+
 bad=0; n=0
 tmp=$(mktemp)
-for u in $(grep -rho 'https://[^)"`, <]*' handouts/ README.md 2>/dev/null \
-          | sed 's/[.,;:]*$//' | sort -u); do
+for u in $ALL; do
   echo "$u" | grep -qE "$SKIP" && continue
   n=$((n+1))
   code=$(curl -sS -o "$tmp" -w '%{http_code}' -L --max-time 20 -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36' "$u" 2>/dev/null)
