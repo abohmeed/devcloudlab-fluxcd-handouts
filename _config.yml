@@ -1,0 +1,22 @@
+title: Flux CD Handouts
+description: Student handouts for the DevCloudLab Flux CD course.
+url: https://abohmeed.github.io
+baseurl: /devcloudlab-fluxcd-handouts
+
+# The handout Markdown carries its own DevCloudLab masthead so the files are
+# branded when GitHub renders them raw. Jekyll wraps the same files for Pages.
+defaults:
+  - scope: { path: "" }
+    values: { layout: default }
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  hard_wrap: false
+
+exclude:
+  - tools/
+  - README-DEV.md
+  - Gemfile
+  - Gemfile.lock

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if page.title %}{{ page.title }} · {% endif %}Flux CD Handouts · DevCloudLab</title>
+{% if page.description %}<meta name="description" content="{{ page.description }}">{% endif %}
+<link rel="icon" href="{{ '/assets/img/devcloudlab-logo.png' | relative_url }}">
+<link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+</head>
+<body>
+
+<!-- The handout Markdown carries its own DevCloudLab masthead, heading and
+     closing call-to-action, so that a file is fully branded when GitHub renders
+     it raw, outside this layout. This layout therefore adds only the sticky bar
+     and the page chrome — repeating the logo or the footer here would show each
+     of them twice on Pages. -->
+<header class="dcl-bar">
+  <a class="brand" href="https://devcloudlab.com">DevCloudLab</a>
+  <span class="spacer"></span>
+  <a class="cta" href="https://devcloudlab.com">More courses at DevCloudLab.com &rarr;</a>
+</header>
+
+<main class="wrap">
+  {% if page.kicker %}<span class="kicker">{{ page.kicker }}</span>{% endif %}
+  {{ content }}
+</main>
+
+<script src="{{ '/assets/js/copy.js' | relative_url }}"></script>
+</body>
+</html>
