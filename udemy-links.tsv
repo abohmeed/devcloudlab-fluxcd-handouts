@@ -6,7 +6,6 @@
 # idx = position in the curriculum, lecture = Udemy lecture id, asset = Udemy
 # asset id, host P = GitHub Pages / G = github.com blob, path = under handouts/
 #idx	lecture	asset	host	path
-1	38417084	75946873	G	s01/l02-understanding-gitops.md
 1	38417084	75947085	P	s01/l02-understanding-gitops.html
 2	38417088	75945563	P	s01/l03-introduction-to-flux-cd-and-its-role-in-kubernetes-d.html
 3	38417092	75945609	P	s01/l05-gitops-and-devops.html
