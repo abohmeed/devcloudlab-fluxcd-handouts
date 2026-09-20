@@ -1,0 +1,47 @@
+# The links that point INTO this repo from the live Udemy course (id 5391828).
+# Captured from the instructor API. Regenerate after any change to the lecture
+# resources; tools/check_live_links.sh verifies this file against the repo and
+# against the live URLs.
+#
+# idx = position in the curriculum, lecture = Udemy lecture id, asset = Udemy
+# asset id, host P = GitHub Pages / G = github.com blob, path = under handouts/
+#idx	lecture	asset	host	path
+1	38417084	75946873	G	s01/l02-understanding-gitops.md
+1	38417084	75947085	P	s01/l02-understanding-gitops.html
+2	38417088	75945563	P	s01/l03-introduction-to-flux-cd-and-its-role-in-kubernetes-d.html
+3	38417092	75945609	P	s01/l05-gitops-and-devops.html
+4	38417204	75945665	P	s02/l01-installing-and-configuring-git.html
+5	38417094	75945711	P	s02/l02-kubernetes-cluster-setup.html
+7	38417098	75945725	P	s02/l03-installing-and-bootstrapping-flux-cd.html
+8	38417104	75945727	P	s02/l04-syncing-kubernetes-resources-with-flux-cd.html
+9	38417122	75945755	P	s02/l05-flux-cd-workflows-and-automation-processes.html
+10	38417128	75945759	P	s02/l06-implementing-declarative-infrastructure-with-flux-cd.html
+11	57831291	75945763	P	s02/l07-migrating-off-the-removed-flux-beta-apis.html
+12	38417142	75945771	P	s03/l01-understanding-helm-and-its-interaction-with-flux-cd.html
+13	38417146	75945773	P	s03/l02-deploying-applications-using-flux-cd-with-git-as-the.html
+14	38995106	75945775	P	s03/l03-modifying-the-helm-chart-and-overriding-the-default.html
+15	39008306	75945811	P	s03/l04-optional-creating-a-private-helm-repository.html
+16	39034410	75945815	P	s03/l05-using-http-helm-repositories-with-flux-cd.html
+17	39068456	75945821	P	s03/l06-using-oci-helm-repositories-with-flux-cd.html
+19	39095194	75945827	P	s03/l07-using-ecr-as-a-helm-repository-with-eks-and-flux-cd.html
+20	39132906	75945831	P	s03/l08-automating-helm-release-upgrades.html
+21	40182770	75945841	P	s03/l09-installing-a-web-ui-for-flux-cd-flux-operator-replac.html
+22	39321432	75945843	P	s04/l01-flux-cd-and-kustomize.html
+23	39225718	75945845	P	s04/l02-different-git-directory-structuring-methods.html
+24	39222126	75945869	P	s04/l03-restructuring-our-repository-to-follow-best-practice.html
+25	39222144	75945873	P	s04/l04-using-flux-cd-with-the-monorepo-approach.html
+26	39315524	75945879	P	s04/l05-restructuring-the-repository-to-follow-the-multi-ten.html
+27	39321132	75945887	P	s04/l06-onboarding-tenants-and-enforcing-restrictions-the-de.html
+28	39434294	75945889	P	s04/l07-onboarding-tenants-and-enforcing-restrictions-the-ad.html
+29	40569672	75945891	P	s05/l01-section-introduction-flux-cd-security.html
+30	39437590	75945893	P	s05/l02-secrets-encryption-with-bitnami-s-sealed-secrets.html
+31	39506326	75945897	P	s05/l03-flux-cd-s-kustomization-integration-with-mozilla-sop.html
+32	39524942	75945903	P	s05/l04-secrets-encryption-with-gpg.html
+33	39653350	75945907	P	s05/l05-secrets-encryption-with-age.html
+34	39525004	75945911	P	s05/l06-secrets-encryption-with-hashicorp-vault-and-openbao.html
+36	39752154	75945915	P	s05/l07-validating-the-integrity-of-helm-charts-using-cosign.html
+37	40676368	75945919	P	s06/l01-what-is-image-automation.html
+38	40676466	75945927	P	s06/l02-image-automation-with-public-registries.html
+39	40676506	75945929	P	s07/l01-section-introduction-flux-cd-notification-automation.html
+40	40676512	75945941	P	s07/l02-sending-flux-cd-notifications-to-slack.html
+41	40676524	75945945	P	s07/l03-flux-cd-automatic-reconciliation-using-webhooks.html
