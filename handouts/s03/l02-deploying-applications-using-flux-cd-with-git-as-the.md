@@ -59,21 +59,21 @@ spec:
 
 **What each field means:**
 - `apiVersion: helm.toolkit.fluxcd.io/v2` — Specifies the Helm Toolkit API version for Flux v2
-- `kind: HelmRelease` — Tells Flux to use the Helm Release controller
+- `kind: HelmRelease` — Tells Flux to hand this manifest to the helm-controller
 - `metadata.name` — The name of this Helm release
 - `metadata.namespace` — Where the release will be installed
-- `spec.interval` — How often Flux checks for changes in this HelmRelease file
+- `spec.interval` — How often Flux checks that the installed release still matches this HelmRelease, and corrects any drift
 - `spec.chart.spec.chart` — Path to the Helm chart within the Git repository
 - `spec.chart.spec.sourceRef` — Reference to the Git repository source
-- `spec.chart.spec.interval` — How often Flux checks for changes in the Helm chart files themselves
+- `spec.chart.spec.interval` — How often Flux checks the chart source for a new chart
 
 ### Two Intervals
 Understanding the difference is crucial:
 
-- **HelmRelease interval** (`spec.interval`): How often Flux checks if this HelmRelease manifest has changed in Git
-- **Chart interval** (`spec.chart.spec.interval`): How often Flux checks if the Helm chart files (templates, values) have changed
+- **HelmRelease interval** (`spec.interval`): How often Flux checks that the installed release still matches this HelmRelease, and corrects any drift. Edits to the HelmRelease file itself reach the cluster through the flux-system Kustomization, like any other file in the repository.
+- **Chart interval** (`spec.chart.spec.interval`): How often Flux checks the chart source. By default, only a new `version` in `Chart.yaml` produces a new chart — editing a template or `values.yaml` without bumping the version is not picked up. A later lecture shows how to change that with `reconcileStrategy`.
 
-Both help Flux detect different types of changes in your repository.
+The two intervals govern different things: one keeps the running release in line with its definition, the other watches for a new chart.
 
 ## Complete Working Example
 

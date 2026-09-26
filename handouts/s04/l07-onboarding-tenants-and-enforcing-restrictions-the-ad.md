@@ -128,7 +128,9 @@ subjects:
 
 Three objects, and no ClusterRole of their own: Flux references the `cluster-admin`
 role that Kubernetes already ships. The second subject, `gotk:apps:reconciler`, is
-the user Flux impersonates when it reconciles on behalf of this tenant.
+a user subject that `flux create tenant` adds. The identity Flux actually acts as
+when it reconciles on behalf of this tenant is the `dev` service account, because
+the tenant's Kustomization sets `serviceAccountName: dev`.
 
 **Key point:** `cluster-admin` is a cluster-wide role, but it is granted here by a
 `RoleBinding` **inside the `apps` namespace**, not a `ClusterRoleBinding`. That one

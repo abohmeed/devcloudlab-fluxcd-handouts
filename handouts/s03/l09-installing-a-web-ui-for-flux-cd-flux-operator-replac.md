@@ -253,11 +253,11 @@ spec:
 
 ## Important Notes
 
-- **Flux Operator is officially maintained**: It's developed in collaboration with the Flux project maintainers by ControlPlane.
+- **Who maintains the Flux Operator**: ControlPlane, a company whose team includes core maintainers of the Flux project. It is not a CNCF Flux project artifact.
 - **Web UI is declarative**: Like any other Helm release, the dashboard is managed by Flux through a GitOps workflow. You commit YAML to Git, and Flux deploys it.
 - **CLI equivalence**: Everything you can see in the Flux Operator dashboard is also available through `kubectl` and `flux` CLI commands. The dashboard is a convenience, not a requirement.
 - **The dashboard is another workload**: Like any other application in your cluster, the dashboard itself is managed by Flux. You can suspend, update, or remove it just like any other HelmRelease.
-- **No authentication by default**: Unlike Weave GitOps (which is now in maintenance mode), this one ships without login by default, which is appropriate for private networks and acceptable for lab environments. Authentication is added through SSO — the operator documents OIDC providers such as Dex, Keycloak and Entra ID.
+- **No authentication by default**: Unlike Weave GitOps (the UI Weaveworks built for Flux before the company shut down), this one ships without login by default, which is appropriate for private networks and acceptable for lab environments. Authentication is added through SSO — the operator documents OIDC providers such as Dex, Keycloak and Entra ID.
 - **Which UI is "the" UI**: the Flux project lists several UIs in its ecosystem page and does not crown one. The Flux Operator is the one built by ControlPlane, the company the Flux maintainers work at, and it is the one this course uses.
 
 ## Troubleshooting
