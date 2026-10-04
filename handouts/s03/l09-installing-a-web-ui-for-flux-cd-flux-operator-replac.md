@@ -1,6 +1,6 @@
 ---
 title: "Installing a web UI for Flux CD (Flux Operator replaces Weave GitOps)"
-kicker: "FLUX CD · SECTION 3 · LECTURE 9"
+kicker: "FLUX CD · SECTION 3 · LECTURE 10"
 description: "Flux CD is powerful from the command line, but sometimes a visual interface is helpful for understanding your deployments at a glance. The Flux Operator, maintained by ControlPlane, a company whose team includes core maintainers of the Flux project, provides a web dashboard for Flux CD."
 ---
 
@@ -8,7 +8,7 @@ description: "Flux CD is powerful from the command line, but sometimes a visual 
 
 # Installing a web UI for Flux CD (Flux Operator replaces Weave GitOps)
 
-*Section 3, Lecture 9, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 10, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

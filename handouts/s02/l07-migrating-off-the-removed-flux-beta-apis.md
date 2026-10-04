@@ -1,6 +1,6 @@
 ---
 title: "Migrating off the removed Flux beta APIs"
-kicker: "FLUX CD · SECTION 2 · LECTURE 7"
+kicker: "FLUX CD · SECTION 2 · LECTURE 8"
 description: "If you've built Flux manifests using this course, they work fine on the Flux versions that shipped in 2024. But if you point those same Git repositories at a recent Flux cluster (v2.7.0 or later), reconciliation stops. This lecture shows how to migrate to the stable APIs."
 ---
 
@@ -8,7 +8,7 @@ description: "If you've built Flux manifests using this course, they work fine o
 
 # Migrating off the removed Flux beta APIs
 
-*Section 2, Lecture 7, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 8, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

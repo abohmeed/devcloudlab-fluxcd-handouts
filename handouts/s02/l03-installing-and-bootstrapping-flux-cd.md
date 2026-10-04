@@ -1,6 +1,6 @@
 ---
 title: "Installing and bootstrapping Flux CD"
-kicker: "FLUX CD · SECTION 2 · LECTURE 3"
+kicker: "FLUX CD · SECTION 2 · LECTURE 4"
 description: "Install the Flux CLI, verify your cluster with flux check --pre, and bootstrap Flux CD against a GitHub or GitLab repository"
 ---
 
@@ -8,7 +8,7 @@ description: "Install the Flux CLI, verify your cluster with flux check --pre, a
 
 # Installing and bootstrapping Flux CD
 
-*Section 2, Lecture 3, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 4, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

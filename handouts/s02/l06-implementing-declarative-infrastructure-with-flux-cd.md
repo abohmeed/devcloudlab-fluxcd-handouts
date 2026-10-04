@@ -1,6 +1,6 @@
 ---
 title: "Implementing declarative infrastructure with Flux CD"
-kicker: "FLUX CD · SECTION 2 · LECTURE 6"
+kicker: "FLUX CD · SECTION 2 · LECTURE 7"
 description: "How Flux CD turns manifests, Helm releases and Kustomize overlays committed to Git into a continuously reconciled cluster state."
 ---
 
@@ -8,7 +8,7 @@ description: "How Flux CD turns manifests, Helm releases and Kustomize overlays 
 
 # Implementing declarative infrastructure with Flux CD
 
-*Section 2, Lecture 6, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 7, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

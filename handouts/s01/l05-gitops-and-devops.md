@@ -1,6 +1,6 @@
 ---
 title: "GitOps and DevOps"
-kicker: "FLUX CD · SECTION 1 · LECTURE 5"
+kicker: "FLUX CD · SECTION 1 · LECTURE 4"
 description: "A side-by-side comparison of DevOps and GitOps, and why GitOps is one way of practicing DevOps rather than a replacement for it."
 ---
 
@@ -8,7 +8,7 @@ description: "A side-by-side comparison of DevOps and GitOps, and why GitOps is 
 
 # GitOps and DevOps
 
-*Section 1, Lecture 5, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 1, Lecture 4, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

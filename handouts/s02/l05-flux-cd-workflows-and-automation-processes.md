@@ -1,6 +1,6 @@
 ---
 title: "Flux CD workflows and automation processes"
-kicker: "FLUX CD · SECTION 2 · LECTURE 5"
+kicker: "FLUX CD · SECTION 2 · LECTURE 6"
 description: "How Flux CD's source, synchronization and reconciliation stages fit together into a loop, and how Image Automation keeps that loop image-aware"
 ---
 
@@ -8,7 +8,7 @@ description: "How Flux CD's source, synchronization and reconciliation stages fi
 
 # Flux CD workflows and automation processes
 
-*Section 2, Lecture 5, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 6, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

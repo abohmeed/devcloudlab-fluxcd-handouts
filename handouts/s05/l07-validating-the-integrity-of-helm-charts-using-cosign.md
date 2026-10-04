@@ -1,6 +1,6 @@
 ---
 title: "Validating the integrity of Helm charts using Cosign"
-kicker: "FLUX CD · SECTION 5 · LECTURE 7"
+kicker: "FLUX CD · SECTION 5 · LECTURE 8"
 description: "How to sign OCI Helm charts with Cosign, how keyless signing differs from key pairs, and how to make Flux CD verify a chart before it installs it"
 ---
 
@@ -8,7 +8,7 @@ description: "How to sign OCI Helm charts with Cosign, how keyless signing diffe
 
 # Validating the integrity of Helm charts using Cosign
 
-*Section 5, Lecture 7, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 5, Lecture 8, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

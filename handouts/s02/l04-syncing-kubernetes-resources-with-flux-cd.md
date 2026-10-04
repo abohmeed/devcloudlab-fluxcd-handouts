@@ -1,6 +1,6 @@
 ---
 title: "Syncing Kubernetes resources with Flux CD"
-kicker: "FLUX CD · SECTION 2 · LECTURE 4"
+kicker: "FLUX CD · SECTION 2 · LECTURE 5"
 description: "How Flux CD's GitRepository and Kustomization resources connect a cluster to Git, and how to add a second repository as a GitOps source"
 ---
 
@@ -8,7 +8,7 @@ description: "How Flux CD's GitRepository and Kustomization resources connect a 
 
 # Syncing Kubernetes resources with Flux CD
 
-*Section 2, Lecture 4, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 5, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

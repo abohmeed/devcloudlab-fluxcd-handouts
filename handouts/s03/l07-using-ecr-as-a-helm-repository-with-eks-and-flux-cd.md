@@ -1,6 +1,6 @@
 ---
 title: "Using ECR as a Helm repository with EKS and Flux CD"
-kicker: "FLUX CD · SECTION 3 · LECTURE 7"
+kicker: "FLUX CD · SECTION 3 · LECTURE 8"
 description: "This lecture demonstrates how to deploy Flux CD on Amazon EKS and use AWS Elastic Container Registry (ECR) as a private Helm repository. We use IAM Roles for Service Accounts (IRSA) to let Flux CD's source controller authenticate to ECR without storing credentials in Git."
 ---
 
@@ -8,7 +8,7 @@ description: "This lecture demonstrates how to deploy Flux CD on Amazon EKS and 
 
 # Using ECR as a Helm repository with EKS and Flux CD
 
-*Section 3, Lecture 7, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 8, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

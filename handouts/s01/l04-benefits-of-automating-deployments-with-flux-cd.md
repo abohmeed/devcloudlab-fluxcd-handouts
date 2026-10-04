@@ -1,6 +1,6 @@
 ---
 title: "Benefits of automating deployments with Flux CD"
-kicker: "FLUX CD · SECTION 1 · LECTURE 4"
+kicker: "FLUX CD · SECTION 1 · LECTURE 5"
 description: "This lecture covers five benefits teams see when they automate their Kubernetes deployments with Flux CD: consistency, speed, safe rollbacks, collaboration and scalability, and observability."
 ---
 
@@ -8,7 +8,7 @@ description: "This lecture covers five benefits teams see when they automate the
 
 # Benefits of automating deployments with Flux CD
 
-*Section 1, Lecture 4, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 1, Lecture 5, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

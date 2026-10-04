@@ -1,6 +1,6 @@
 ---
 title: "Automating Helm Release upgrades"
-kicker: "FLUX CD · SECTION 3 · LECTURE 8"
+kicker: "FLUX CD · SECTION 3 · LECTURE 9"
 description: "This lecture explores how Flux CD automates Helm chart upgrades using two mechanisms, revision-based for Git-sourced charts and version-based for Helm-repository charts, and how to pause either of them with suspend."
 ---
 
@@ -8,7 +8,7 @@ description: "This lecture explores how Flux CD automates Helm chart upgrades us
 
 # Automating Helm Release upgrades
 
-*Section 3, Lecture 8, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 9, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 

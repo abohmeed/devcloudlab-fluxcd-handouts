@@ -47,11 +47,11 @@ Where a lecture was recorded before a tool changed, the handout gives the
 
 - **1.** [Installing and configuring Git](handouts/s02/l01-installing-and-configuring-git.html)
 - **2.** [Kubernetes cluster setup](handouts/s02/l02-kubernetes-cluster-setup.html)
-- **3.** [Installing and bootstrapping Flux CD](handouts/s02/l03-installing-and-bootstrapping-flux-cd.html)
-- **4.** [Syncing Kubernetes resources with Flux CD](handouts/s02/l04-syncing-kubernetes-resources-with-flux-cd.html)
-- **5.** [Flux CD workflows and automation processes](handouts/s02/l05-flux-cd-workflows-and-automation-processes.html)
-- **6.** [Implementing declarative infrastructure with Flux CD](handouts/s02/l06-implementing-declarative-infrastructure-with-flux-cd.html)
-- **7.** [Migrating off the removed Flux beta APIs](handouts/s02/l07-migrating-off-the-removed-flux-beta-apis.html)
+- **4.** [Installing and bootstrapping Flux CD](handouts/s02/l03-installing-and-bootstrapping-flux-cd.html)
+- **5.** [Syncing Kubernetes resources with Flux CD](handouts/s02/l04-syncing-kubernetes-resources-with-flux-cd.html)
+- **6.** [Flux CD workflows and automation processes](handouts/s02/l05-flux-cd-workflows-and-automation-processes.html)
+- **7.** [Implementing declarative infrastructure with Flux CD](handouts/s02/l06-implementing-declarative-infrastructure-with-flux-cd.html)
+- **8.** [Migrating off the removed Flux beta APIs](handouts/s02/l07-migrating-off-the-removed-flux-beta-apis.html)
 
 ## Section 3: Flux CD and Helm
 
@@ -61,9 +61,9 @@ Where a lecture was recorded before a tool changed, the handout gives the
 - **4.** [(Optional) Creating a private Helm repository](handouts/s03/l04-optional-creating-a-private-helm-repository.html)
 - **5.** [Using HTTP Helm repositories with Flux CD](handouts/s03/l05-using-http-helm-repositories-with-flux-cd.html)
 - **6.** [Using OCI Helm repositories with Flux CD](handouts/s03/l06-using-oci-helm-repositories-with-flux-cd.html)
-- **7.** [Using ECR as a Helm repository with EKS and Flux CD](handouts/s03/l07-using-ecr-as-a-helm-repository-with-eks-and-flux-cd.html)
-- **8.** [Automating Helm Release upgrades](handouts/s03/l08-automating-helm-release-upgrades.html)
-- **9.** [Installing a web UI for Flux CD (Flux Operator replaces Weave GitOps)](handouts/s03/l09-installing-a-web-ui-for-flux-cd-flux-operator-replac.html)
+- **8.** [Using ECR as a Helm repository with EKS and Flux CD](handouts/s03/l07-using-ecr-as-a-helm-repository-with-eks-and-flux-cd.html)
+- **9.** [Automating Helm Release upgrades](handouts/s03/l08-automating-helm-release-upgrades.html)
+- **10.** [Installing a web UI for Flux CD (Flux Operator replaces Weave GitOps)](handouts/s03/l09-installing-a-web-ui-for-flux-cd-flux-operator-replac.html)
 
 ## Section 4: Flux CD and Kustomize
 
@@ -83,7 +83,7 @@ Where a lecture was recorded before a tool changed, the handout gives the
 - **4.** [Secrets encryption with GPG](handouts/s05/l04-secrets-encryption-with-gpg.html)
 - **5.** [Secrets encryption with Age](handouts/s05/l05-secrets-encryption-with-age.html)
 - **6.** [Secrets encryption with HashiCorp Vault (and OpenBao)](handouts/s05/l06-secrets-encryption-with-hashicorp-vault-and-openbao.html)
-- **7.** [Validating the integrity of Helm charts using Cosign](handouts/s05/l07-validating-the-integrity-of-helm-charts-using-cosign.html)
+- **8.** [Validating the integrity of Helm charts using Cosign](handouts/s05/l07-validating-the-integrity-of-helm-charts-using-cosign.html)
 
 ## Section 6: Image automation
 
