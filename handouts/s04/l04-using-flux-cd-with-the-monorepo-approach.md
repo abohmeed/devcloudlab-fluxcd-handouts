@@ -1,14 +1,14 @@
 ---
 title: "Using Flux CD with the Monorepo approach"
 kicker: "FLUX CD · SECTION 4 · LECTURE 4"
-description: "In this lecture, you learned how to structure a Git repository using the monorepo approach and deploy applications to multiple Kubernetes clusters using Flux CD and"
+description: "How to structure a Git repository using the monorepo approach and deploy applications to multiple Kubernetes clusters using Flux CD and Kustomize, with per-environment patches for chart versions and ingress hostnames."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Using Flux CD with the Monorepo approach
 
-*Section 4, Lecture 4 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 4, Lecture 4, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -67,7 +67,7 @@ myfluxrepo-2026/
 > If you ever add a `kustomization.yaml` directly inside `clusters/staging/` or
 > `clusters/production/`, list `flux-system` in its `resources`. The
 > Kustomization that `flux bootstrap` created watches that directory with
-> `prune: true`, so whatever the file leaves out is deleted from the cluster —
+> `prune: true`, so whatever the file leaves out is deleted from the cluster,
 > and `flux-system/` is Flux itself.
 
 ---
@@ -144,16 +144,18 @@ sudo nano /etc/hosts
 sudo dscacheutil -flushcache
 ```
 
-The staging cluster answers on port 8080 (`http://podinfo.staging:8080`)
-because both clusters share one host and only production could take port 80.
+The staging cluster answers on the host port you mapped in `staging-info.yaml`
+(8888 if you followed the previous lecture; the video's lab used 8080), for example
+`http://podinfo.staging:8888`. It needs its own port because both clusters share one
+host and only production could take port 80.
 
 ---
 
 ## Complete Final Manifests
 
-### 1. Infrastructure Controllers Kustomization
+### 1. Infrastructure Controllers Kustomization (unchanged)
 
-**File:** `infrastructure/controllers/kustomization.yaml`
+**File:** `infrastructure/controllers/kustomization.yaml`, created in the previous lecture and shown here for reference. This lecture does not change it.
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -196,7 +198,7 @@ spec:
         name: flux-web
 ```
 
-This uses Kustomize's JSON Patch operations to replace the dashboard ingress hostname for the staging cluster. The dashboard chart keeps its ingress settings under a `web` key, which is why the path has `/web/` in it.
+Two settings change from the previous lecture's version of this file: `timeout` goes from 5m to 10m, because the dashboard takes time to register itself with the ingress controller, and `retryInterval` goes from 1m to 5m. The `patches` block is new. It uses Kustomize's JSON Patch operations to replace the dashboard ingress hostname for the staging cluster. The dashboard chart keeps its ingress settings under a `web` key, which is why the path has `/web/` in it.
 
 ### 3. Production Infrastructure Patch
 
@@ -299,7 +301,7 @@ spec:
       version: ">=6.14.0"
 ```
 
-This patch tells Flux to install the newest podinfo chart that is 6.14.0 or higher — `6.15.0` at the time of writing — and to move to anything newer as it is published, so staging always exercises the latest release.
+This patch tells Flux to install the newest podinfo chart that is 6.14.0 or higher (`6.15.0` at the time of writing) and to move to anything newer as it is published, so staging always exercises the latest release.
 
 **File:** `apps/staging/kustomization.yaml`
 
@@ -332,7 +334,7 @@ patches:
         name: podinfo
 ```
 
-This adds the staging ingress hostname. The `/-` syntax appends a new item to the hosts list. Note that podinfo puts `ingress` directly under `values`, so this path has no `web` segment — unlike the dashboard patch above.
+This adds the staging ingress hostname. The `/-` syntax appends a new item to the hosts list. Note that podinfo puts `ingress` directly under `values`, so this path has no `web` segment, unlike the dashboard patch above.
 
 ### 6. Production Application Configuration
 
@@ -416,7 +418,7 @@ base release declares `hosts: []`).
 
 ### Version Constraints
 
-**`>=6.14.0`** (Staging): Flux installs the newest chart version that satisfies the constraint and upgrades whenever a newer one is published. There is no upper bound — if a 7.x chart appears, this constraint takes it. Write `>=6.14.0 <7.0.0` (or `~6.14`) if you want to stay inside the 6.x series.
+**`>=6.14.0`** (Staging): Flux installs the newest chart version that satisfies the constraint and upgrades whenever a newer one is published. There is no upper bound: if a 7.x chart appears, this constraint takes it. Write `>=6.14.0 <7.0.0` (or `~6.14`) if you want to stay inside the 6.x series.
 
 **`6.14.0`** (Production): Pins to an exact version. Ensures stability and predictability. You control when to upgrade.
 
@@ -470,7 +472,7 @@ helm get values podinfo
 
 ### podinfo never appears in `helm list`?
 ```bash
-# The Helm source first — an OCI URL without `type: oci` is rejected here
+# The Helm source first: an OCI URL without `type: oci` is rejected here
 flux get sources helm
 
 # Then the release, and the chart it is trying to pull
@@ -496,7 +498,7 @@ helm history podinfo
 # 2  deployed    podinfo-6.15.0  Upgrade complete
 ```
 
-If revision 2 never arrives, the patch in `clusters/<env>/apps.yaml` is what to check — the target name must be `podinfo` and the path `/spec/values/ingress/hosts/-`.
+If revision 2 never arrives, the patch in `clusters/<env>/apps.yaml` is what to check: the target name must be `podinfo` and the path `/spec/values/ingress/hosts/-`.
 
 ### Flux reconciliation failing?
 ```bash
@@ -525,6 +527,6 @@ flux get kustomizations
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

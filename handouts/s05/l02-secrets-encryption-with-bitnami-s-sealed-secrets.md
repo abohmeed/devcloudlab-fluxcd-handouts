@@ -1,14 +1,14 @@
 ---
 title: "Secrets encryption with Bitnami's Sealed Secrets"
 kicker: "FLUX CD · SECTION 5 · LECTURE 2"
-description: "This lecture covers how to securely manage Kubernetes secrets in a Git repository using Bitnami's Sealed Secrets. Sealed Secrets encrypts your secret data so it can be safely"
+description: "How to securely manage Kubernetes secrets in a Git repository using Bitnami's Sealed Secrets, which encrypts your secret data so it can be safely committed to version control while keeping to GitOps principles."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Secrets encryption with Bitnami's Sealed Secrets
 
-*Section 5, Lecture 2 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 5, Lecture 2, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -45,7 +45,7 @@ kubeseal --version
 ```
 
 On macOS, `brew install kubeseal` installs the same tool. Every release is listed at
-https://github.com/bitnami-labs/sealed-secrets/releases — pick the archive that matches
+https://github.com/bitnami-labs/sealed-secrets/releases. Pick the archive that matches
 your operating system and CPU architecture.
 
 ### Install the Sealed Secrets Controller
@@ -79,7 +79,17 @@ git add .
 git commit -m "Add Sealed Secrets controller"
 git push origin main
 
+kubectl config use-context kind-staging
 flux reconcile kustomization infrastructure-controllers --with-source
+kubectl get pods -n flux-system | grep sealed
+```
+
+Sealed Secrets is a standard infrastructure component, so apply it on the production cluster too:
+
+```bash
+kubectl config use-context kind-production
+flux reconcile kustomization infrastructure-controllers --with-source
+kubectl get pods -n flux-system | grep sealed
 ```
 
 ## How Sealed Secrets Works
@@ -102,23 +112,40 @@ Sealed Secrets uses asymmetric encryption:
 
 ## Common Tasks
 
-### Extract Public Keys
+### Extract the Public Keys
 
-Extract the public key from your cluster:
+Sealed Secrets is installed on every cluster, and each cluster's controller generates its own key pair. Fetch the public key from each cluster and keep both in the repository so every team member can encrypt with them.
+
+Store them in a `sealed-secrets-keys` directory at the repository root, next to `clusters` and `infrastructure` and outside both. It sits outside the paths Flux reads and applies because the files are PEM-encoded keys, not YAML manifests: if Flux tried to apply them to the cluster, the reconcile would fail.
 
 ```bash
+mkdir -p sealed-secrets-keys
+cd sealed-secrets-keys
+
+kubectl config use-context kind-staging
 kubeseal --fetch-cert \
   --controller-name=sealed-secrets-controller \
   --controller-namespace=flux-system \
-  > public.pem
+  > staging.pem
+
+kubectl config use-context kind-production
+kubeseal --fetch-cert \
+  --controller-name=sealed-secrets-controller \
+  --controller-namespace=flux-system \
+  > production.pem
+
+ls -la *.pem
 ```
+
+You now have two different public keys, `staging.pem` and `production.pem`. A SealedSecret can only be unsealed by the controller whose public key sealed it, so seal with the key of the cluster you are targeting.
 
 ### Create and Encrypt a Secret
 
-Create a Kubernetes Secret in YAML format. Everything in angle brackets is yours to
-replace — the repository in the lecture is the instructor's, not one you can pull from:
+Switch back to staging and recreate the `gitlab-auth` Secret from the earlier tenant-onboarding lecture as a YAML file. Everything in angle brackets is yours to replace: the repository in the lecture is the instructor's, not one you can pull from:
 
 ```bash
+kubectl config use-context kind-staging
+
 flux create secret git gitlab-auth \
   --url=https://gitlab.com/<your-gitlab-username>/<your-repo>.git \
   --username=<your-gitlab-username> \
@@ -128,33 +155,54 @@ flux create secret git gitlab-auth \
 ```
 
 Open `secret.yaml` and look before you go further: `flux` writes the credentials under
-`stringData:` as raw, readable text — not even base64. This file must never be
+`stringData:` as raw, readable text (not even base64). This file must never be
 committed.
 
-Encrypt the secret using kubeseal:
+Encrypt the secret with the staging cluster's public key:
 
 ```bash
-kubeseal --format=yaml --cert=public.pem < secret.yaml > gitlab-auth-sealed.yaml
+kubeseal --format=yaml --cert=staging.pem < secret.yaml > gitlab-auth-sealed.yaml
+cat gitlab-auth-sealed.yaml
 ```
+
+The result is a `SealedSecret` whose `spec.encryptedData` holds long encrypted blobs. Nothing in it traces back to your credentials.
 
 ### Apply Encrypted Secrets via GitOps
 
-Copy the encrypted secret into your manifests and commit to Git:
+Append the SealedSecret to the dev team's sync file, `tenants/base/dev/sync.yaml`. It already holds several YAML documents, so add the `---` document separator first:
 
 ```bash
-cat gitlab-auth-sealed.yaml >> tenants/base/dev/sync.yaml
-git add tenants/base/dev/sync.yaml
-git commit -m "Add encrypted gitlab-auth secret"
+echo '---' >> ../tenants/base/dev/sync.yaml
+cat gitlab-auth-sealed.yaml >> ../tenants/base/dev/sync.yaml
+```
+
+Before you commit, delete the existing `gitlab-auth` Secret by hand. It was created directly with `kubectl` before Sealed Secrets was in place, and the controller will not take over a Secret it did not create:
+
+```bash
+kubectl get secrets -n apps
+kubectl delete secret gitlab-auth -n apps
+kubectl get secrets -n apps | grep gitlab
+```
+
+The last command prints nothing for `gitlab-auth`: the Secret is gone.
+
+Now commit the sync file and the two public keys. Add the `.pem` files by name. Never run `git add sealed-secrets-keys/` on the whole directory: it also holds `secret.yaml`, the plain-text secret, and committing that is exactly the mistake Sealed Secrets exists to prevent.
+
+```bash
+cd ..
+git add tenants/base/dev/sync.yaml sealed-secrets-keys/staging.pem sealed-secrets-keys/production.pem
+git commit -m "Add encrypted gitlab-auth secret for dev team"
 git push origin main
 ```
 
-Flux CD will automatically apply it:
+Reconcile so Flux pulls and applies the change immediately:
 
 ```bash
 flux reconcile kustomization flux-system --with-source
+flux reconcile kustomization tenants
 ```
 
-The Sealed Secrets controller automatically decrypts the SealedSecret and creates a regular Secret.
+After a few seconds the `gitlab-auth` Secret is back. This time the Sealed Secrets controller created it from the SealedSecret stored in Git.
 
 ### Verify Decryption
 
@@ -230,6 +278,6 @@ Sealed Secrets provides a practical and secure way to manage Kubernetes secrets 
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

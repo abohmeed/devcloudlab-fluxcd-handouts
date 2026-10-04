@@ -1,14 +1,14 @@
 ---
 title: "Different Git directory structuring methods"
 kicker: "FLUX CD · SECTION 4 · LECTURE 2"
-description: "How to lay out a Git repository for Flux CD and Kustomize: monorepo, per-environment, per-team, and per-application, and the trade-offs of each"
+description: "How to lay out a Git repository for Flux CD and Kustomize: monorepo, per-environment, per-team, and per-application, and the trade-offs of each."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Different Git directory structuring methods
 
-*Section 4, Lecture 2 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 4, Lecture 2, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -28,7 +28,7 @@ The rest of this lecture compares four common ways teams lay out a Git repositor
 
 ## Method 1: the monorepo
 
-In a **monorepo**, every Kubernetes manifest — applications and cluster infrastructure alike — lives in a single repository. Both `apps` and `infrastructure` are organized as a `base` (the sane defaults) with overlays per target.
+In a **monorepo**, every Kubernetes manifest (applications and cluster infrastructure alike) lives in a single repository. Both `apps` and `infrastructure` are organized as a `base` (the sane defaults) with overlays per target.
 
 ```
 .
@@ -45,9 +45,9 @@ In a **monorepo**, every Kubernetes manifest — applications and cluster infras
     └── staging
 ```
 
-The `clusters` directory holds the target clusters — for example `dev`, `staging`, and `production`. A single-cluster setup works too: instead of multiple cluster directories, you'd have one cluster with a `namespaces` directory underneath it for `dev`, `staging`, and `production` namespaces. The difference only shows up at bootstrap time — a multi-cluster setup means running Flux's bootstrap process once per cluster to lay down its `flux-system` Kustomization.
+The `clusters` directory holds the target clusters, for example `dev`, `staging`, and `production`. A single-cluster setup works too: instead of multiple cluster directories, you'd have one cluster with a `namespaces` directory underneath it for `dev`, `staging`, and `production` namespaces. The difference only shows up at bootstrap time: a multi-cluster setup means running Flux's bootstrap process once per cluster to lay down its `flux-system` Kustomization.
 
-Keeping `apps` and `infrastructure` separate lets you define an **execution order**. If an application depends on an infrastructure component — a network policy, an ingress controller, a certificate issuer — that component lives under `infrastructure` and is reconciled before the application that needs it.
+Keeping `apps` and `infrastructure` separate lets you define an **execution order**. If an application depends on an infrastructure component (a network policy, an ingress controller, a certificate issuer), that component lives under `infrastructure` and is reconciled before the application that needs it.
 
 **Change workflow in a monorepo.** Changes go through short-lived feature branches merged into `main` via pull requests; once merged, the branch is deleted. From there, promotion can follow two patterns:
 
@@ -58,14 +58,14 @@ For tighter control on top of that, a progressive delivery tool like **Flagger**
 
 ## Method 2: one repository per environment
 
-Instead of one repository holding every environment, each environment — `dev`, `staging`, `production` — gets its **own repository**.
+Instead of one repository holding every environment, each environment (`dev`, `staging`, `production`) gets its **own repository**.
 
 | | Monorepo | Repository per environment |
 |---|---|---|
 | Who can see production manifests | Anyone with access to the one repo | Only those granted access to the production repo |
 | Promoting a change to production | Merge within the same repository | Requires copying or syncing changes across repositories |
 
-The advantage is access control: production configuration is never exposed to everyone who can see `dev` or `staging`, which matters in high-security environments that require this kind of segregation. The drawback is the opposite side of the same coin — promoting a change to production is harder, because it now means moving a change across a repository boundary instead of merging within one.
+The advantage is access control: production configuration is never exposed to everyone who can see `dev` or `staging`, which matters in high-security environments that require this kind of segregation. The drawback is the opposite side of the same coin: promoting a change to production is harder, because it now means moving a change across a repository boundary instead of merging within one.
 
 ## Method 3: one repository per team
 
@@ -75,7 +75,7 @@ Some organizations separate **platform concerns from application concerns** by r
 - Creating CRDs, controllers, admission webhooks, and policies
 - Onboarding new application teams into the cluster via Flux's `GitRepository` resource
 
-That team is not concerned with deploying or managing individual applications — that responsibility belongs to each application team, and **each team gets its own Git repository** to manage its own deployments, services, volumes, and Helm charts. Day-to-day application delivery inside a team's repository looks like the monorepo approach described above; what changes is the **separation of concerns**: the admin team reviews and merges changes to the cluster platform, while each application team reviews and merges changes to its own application.
+That team is not concerned with deploying or managing individual applications. That responsibility belongs to each application team, and **each team gets its own Git repository** to manage its own deployments, services, volumes, and Helm charts. Day-to-day application delivery inside a team's repository looks like the monorepo approach described above; what changes is the **separation of concerns**: the admin team reviews and merges changes to the cluster platform, while each application team reviews and merges changes to its own application.
 
 ## Method 4: one repository per application
 
@@ -94,7 +94,7 @@ If the application is instead packaged as a Helm chart, a CI/CD pipeline can bui
 | **Repository per team** | One cluster/platform repository, plus one repository per application team | Larger orgs that want a dedicated platform team | More repositories and `GitRepository` resources to manage |
 | **Repository per application** | Application code and its manifests together | Teams that want zero duplication between app and deployment config | Cluster-wide conventions have to be enforced across many repos instead of one |
 
-There is no single correct structure — the right one depends on team size, how much isolation production needs, and how much a platform team wants to own centrally. The next lecture in this section takes the repository built so far in this course and restructures it to follow one of these approaches.
+There is no single correct structure: the right one depends on team size, how much isolation production needs, and how much a platform team wants to own centrally. The next lecture in this section takes the repository built so far in this course and restructures it to follow one of these approaches.
 
 ## Further reading
 
@@ -111,6 +111,6 @@ There is no single correct structure — the right one depends on team size, how
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

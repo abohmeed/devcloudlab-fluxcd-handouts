@@ -2,13 +2,13 @@
 # Checks the direction the other tools do not: the links pointing INTO this repo
 # from the live Udemy course.
 #
-# check.sh and check_links.sh both bind a handout to ITSELF — its shape, its
+# check.sh and check_links.sh both bind a handout to ITSELF, its shape, its
 # hygiene, the URLs inside it. None of them knows the 38 live lecture links
 # exist. Rename or move a handout and every one of those links 404s for students
 # while every other check in this repo still reports ALL CLEAN. That is a gate
 # written where the files are rather than where the risk is.
 #
-# So this reads udemy-links.tsv — the captured live link set — and asserts:
+# So this reads udemy-links.tsv, the captured live link set, and asserts:
 #   1. every linked path still exists as a file in this repo
 #   2. every linked URL still resolves (200, and not a soft-404 page)
 #   3. every handout on disk is actually linked from some lecture
@@ -18,14 +18,16 @@
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
+# Handouts tolerated as unlinked (lectures not yet published). Keep at 0.
+MAX_UNLINKED=0
 MAN=udemy-links.tsv
 PAGES=https://abohmeed.github.io/devcloudlab-fluxcd-handouts/handouts/
 BLOB=https://github.com/abohmeed/devcloudlab-fluxcd-handouts/blob/main/handouts/
 
-[ -f "$MAN" ]   || { echo "FATAL: $MAN is missing — the live link set is unknown"; exit 2; }
+[ -f "$MAN" ]   || { echo "FATAL: $MAN is missing: the live link set is unknown"; exit 2; }
 [ -d handouts ] || { echo "FATAL: handouts/ does not exist"; exit 2; }
 rows=$(grep -vc '^#' "$MAN")
-[ "$rows" -ge 38 ] || { echo "FATAL: $MAN holds $rows rows, expected 38+ — it did not load"; exit 2; }
+[ "$rows" -ge 38 ] || { echo "FATAL: $MAN holds $rows rows, expected 38+: it did not load"; exit 2; }
 
 fail=0
 linked_files=$(mktemp)
@@ -51,7 +53,7 @@ while IFS=$'\t' read -r idx lecture asset host path; do
   case "$idx" in \#*|"") continue;; esac
   url="$PAGES$path"; [ "$host" = "G" ] && url="$BLOB$path"
   n=$((n+1))
-  # 429 is rate limiting, not link rot — github.com returns it when this loop
+  # 429 is rate limiting, not link rot, github.com returns it when this loop
   # runs hot. Retry with backoff; if it persists, it is reported as a FAILURE
   # rather than a pass, because "we could not find out" must never render as
   # green. Re-run when the limit clears.
@@ -91,9 +93,9 @@ unlinked=$(find handouts -name '*.md' | sort | comm -23 - "$linked_files.s")
 if [ -n "$unlinked" ]; then
   echo "  not linked from any lecture:"
   printf '%s\n' "$unlinked" | sed 's/^/    /'
-  echo "  (two are expected: the handouts for lectures that have not published yet)"
+  echo "  (up to $MAX_UNLINKED expected: the handouts for lectures that have not published yet)"
   cnt=$(printf '%s\n' "$unlinked" | grep -c .)
-  [ "$cnt" -le 2 ] || { echo "  MORE THAN THE TWO EXPECTED — a handout has lost its link"; fail=1; }
+  [ "$cnt" -le "$MAX_UNLINKED" ] || { echo "  MORE THAN THE $MAX_UNLINKED EXPECTED: a handout has lost its link"; fail=1; }
 else
   echo "  every handout is linked"
 fi

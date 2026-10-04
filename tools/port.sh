@@ -39,7 +39,7 @@ desc="$(printf '%s\n' "$body" \
 
   printf '<a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>\n\n'
   printf '# %s\n\n' "$title"
-  printf '*Section %s, Lecture %s — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*\n\n' "$secnum" "$lesnum"
+  printf '*Section %s, Lecture %s, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*\n\n' "$secnum" "$lesnum"
   printf -- '---\n\n'
 
   printf '%s\n' "$body"
@@ -50,7 +50,7 @@ desc="$(printf '%s\n' "$body" \
   printf '</p>\n\n'
   printf '<p align="center">\n'
   printf '  <strong>Built by DevCloudLab</strong><br>\n'
-  printf '  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>\n'
+  printf '  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>\n'
   printf '  <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>\n'
   printf '</p>\n'
 } > "$dst"

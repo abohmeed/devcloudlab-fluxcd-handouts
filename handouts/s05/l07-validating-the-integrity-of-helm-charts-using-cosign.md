@@ -8,7 +8,7 @@ description: "How to sign OCI Helm charts with Cosign, how keyless signing diffe
 
 # Validating the integrity of Helm charts using Cosign
 
-*Section 5, Lecture 7 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 5, Lecture 7, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -28,14 +28,14 @@ raises a separate question: when a chart is downloaded, is there proof its
 contents weren't changed after the maintainer packaged it?
 
 TLS answers a narrower question. If you pull a chart from
-`registry.gitlab.com`, HTTPS proves you're really talking to that host — it says
+`registry.gitlab.com`, HTTPS proves you're really talking to that host, but it says
 nothing about whether the bytes inside the chart are the ones the publisher
 intended. A registry, a mirror, or anything in between could still swap the
 contents.
 
 **Cosign** closes that gap. It hashes the chart's contents and signs that hash
 with a private key. Change even one bit of the chart and the signature no
-longer matches — so a chart passing signature verification is proof it's
+longer matches, so a chart passing signature verification is proof it's
 byte-for-byte what the signer produced, not just that it arrived over a secure
 connection.
 
@@ -51,7 +51,7 @@ Cosign supports two ways to sign an artifact:
 
 | | Key-pair signing | Keyless signing |
 |---|---|---|
-| **Key material** | A private/public key pair you generate and store | None — no key to protect, lose, or rotate |
+| **Key material** | A private/public key pair you generate and store | None: no key to protect, lose, or rotate |
 | **How it signs** | `cosign sign --key cosign.key <ref>` | `cosign sign <ref>`, which opens an OIDC login (GitHub, Google, …) |
 | **What proves identity** | Possession of the private key | A short-lived certificate Sigstore's Fulcio CA issues against your OIDC identity |
 | **Where the signature is recorded** | The registry, next to the artifact | The registry, plus the public Rekor transparency log |
@@ -59,8 +59,8 @@ Cosign supports two ways to sign an artifact:
 
 This lecture uses key-pair signing, since it maps directly onto a Secret Flux CD
 can read inside the cluster. Keyless signing is worth knowing because it removes
-key management entirely — the signer's identity comes from an OIDC provider
-instead of a file you have to protect — and Flux CD can verify keyless-signed
+key management entirely (the signer's identity comes from an OIDC provider
+instead of a file you have to protect), and Flux CD can verify keyless-signed
 charts too, by matching that recorded identity instead of a public key (see
 **Configure Flux CD to verify the chart**, below).
 
@@ -70,7 +70,7 @@ charts too, by matching that recorded identity instead of a public key (see
 cosign generate-key-pair
 ```
 
-This writes `cosign.key` (a password-protected private key — Cosign will prompt
+This writes `cosign.key` (a password-protected private key; Cosign will prompt
 you to set the password) and `cosign.pub` (the public key) into the current
 directory. Only artifacts signed with the private key verify against the
 matching public key, so keep `cosign.key` out of Git and treat it like any other
@@ -88,7 +88,7 @@ docker login registry.gitlab.com
 
 ## Package and push the chart
 
-Bump the chart version in `Chart.yaml` before packaging — you want a signed
+Bump the chart version in `Chart.yaml` before packaging: you want a signed
 version to exist alongside whatever version is already deployed, so you can
 compare the two later.
 
@@ -100,7 +100,7 @@ helm package .
 helm push weatherapp-auth-0.1.1.tgz oci://registry.gitlab.com/<your-namespace>/myweatherapp
 ```
 
-`helm push` prints the SHA256 digest of the pushed artifact. Copy it — signing
+`helm push` prints the SHA256 digest of the pushed artifact. Copy it: signing
 needs it.
 
 ## Sign the chart
@@ -108,7 +108,7 @@ needs it.
 An OCI Helm chart is stored as a single layer, the same way a container image's
 layers are stored. Cosign hashes that layer, signs the hash with your private
 key, and pushes the resulting signature to the registry as its own artifact
-next to the chart — which is why you sign *after* pushing, not before:
+next to the chart, which is why you sign *after* pushing, not before:
 
 ```bash
 cosign sign --key cosign.key \
@@ -162,7 +162,7 @@ spec:
 
 > **Since this video was recorded:** the HelmRelease API has moved from
 > `helm.toolkit.fluxcd.io/v2beta1` to `helm.toolkit.fluxcd.io/v2`, and the beta
-> versions have since been removed — a manifest using `v2beta1` no longer
+> versions have since been removed: a manifest using `v2beta1` no longer
 > applies. The manifest above uses the current `v2` apiVersion; the video
 > shows the older `v2beta1` form. The `HelmRepository` this HelmRelease points
 > to by name is declared elsewhere in the repository, and its own apiVersion
@@ -196,7 +196,7 @@ helm list -n apps
 
 `helm list` should show `weatherapp-auth` at the signed version. Now try
 pointing the release constraint at an earlier, unsigned version and reconcile
-again — Flux CD refuses to pull and apply it, and the HelmRelease reports a
+again. Flux CD refuses to pull and apply it, and the HelmRelease reports a
 signature verification failure instead of rolling back silently. The chart
 only installs again once you either sign that version the same way, or move
 the constraint back to a version that's already signed.
@@ -207,10 +207,10 @@ software-supply-chain risk chart signing exists to close.
 
 ## Further reading
 
-- [Flux CD — HelmReleases](https://fluxcd.io/flux/components/helm/helmreleases/)
-- [Flux CD — HelmCharts](https://fluxcd.io/flux/components/source/helmcharts/)
-- [Sigstore Cosign — signing overview](https://docs.sigstore.dev/cosign/signing/overview/)
-- [Helm — OCI registries](https://helm.sh/docs/topics/registries/)
+- [Flux CD: HelmReleases](https://fluxcd.io/flux/components/helm/helmreleases/)
+- [Flux CD: HelmCharts](https://fluxcd.io/flux/components/source/helmcharts/)
+- [Sigstore Cosign: signing overview](https://docs.sigstore.dev/cosign/signing/overview/)
+- [Helm: OCI registries](https://helm.sh/docs/topics/registries/)
 
 ---
 
@@ -220,6 +220,6 @@ software-supply-chain risk chart signing exists to close.
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

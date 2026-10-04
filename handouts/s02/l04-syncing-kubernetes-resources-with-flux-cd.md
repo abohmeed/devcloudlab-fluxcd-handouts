@@ -8,7 +8,7 @@ description: "How Flux CD's GitRepository and Kustomization resources connect a 
 
 # Syncing Kubernetes resources with Flux CD
 
-*Section 2, Lecture 4 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 4, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -30,9 +30,9 @@ One of those CRDs is `GitRepository`. It answers the question of which Git repos
 kubectl get gitrepos -n flux-system
 ```
 
-The bootstrap process creates one automatically, usually named `flux-system`. Its `url` field points at the repository holding your Flux configuration, and its `status` field carries the commit hash of the branch it last synced — the branch itself was set during bootstrap (`main` by default) and can be changed later by editing the `GitRepository` object, though there's rarely a reason to for the repository that holds Flux's own configuration.
+The bootstrap process creates one automatically, usually named `flux-system`. Its `url` field points at the repository holding your Flux configuration, and its `status` field carries the commit hash of the branch it last synced. The branch itself was set during bootstrap (`main` by default) and can be changed later by editing the `GitRepository` object, though there's rarely a reason to for the repository that holds Flux's own configuration.
 
-Whether that same repository also holds your application manifests, or you keep application manifests in a separate repository, is a design choice — both are valid GitOps patterns.
+Whether that same repository also holds your application manifests, or you keep application manifests in a separate repository, is a design choice: both are valid GitOps patterns.
 
 ## Authenticating to a private repository
 
@@ -48,7 +48,7 @@ You can reveal the token itself if you need to:
 kubectl get secret flux-system -n flux-system -o jsonpath='{.data.password}' | base64 -d
 ```
 
-> **Note:** This token typically has read and write access to the repository. Everything in the `flux-system` namespace should be restricted to cluster administrators — regular users should have no access to it.
+> **Note:** This token typically has read and write access to the repository. Everything in the `flux-system` namespace should be restricted to cluster administrators. Regular users should have no access to it.
 
 ## Who is allowed to apply changes
 
@@ -65,9 +65,9 @@ kubectl get clusterrolebindings | grep flux
 
 ## Adding a second Git repository as a source
 
-To have Flux CD deploy an application, you point it at the repository holding that application's manifests. This example uses [podinfo](https://github.com/stefanprodan/podinfo), a small cloud-native app that displays information about the pod serving the request. Its `kustomize` directory contains a Deployment, a Service, a HorizontalPodAutoscaler, and a `kustomization.yaml` that references them — no patches or overlays.
+To have Flux CD deploy an application, you point it at the repository holding that application's manifests. This example uses [podinfo](https://github.com/stefanprodan/podinfo), a small cloud-native app that displays information about the pod serving the request. Its `kustomize` directory contains a Deployment, a Service, a HorizontalPodAutoscaler, and a `kustomization.yaml` that references them, with no patches or overlays.
 
-Pointing Flux CD at it takes two resources, both created in the repository holding your Flux configuration (not in podinfo's repository).
+Pointing Flux CD at it takes two resources, both created in the repository holding your Flux configuration (not in podinfo's repository). Save both files in `clusters/my-cluster/`, next to the `flux-system` directory, as the video does: `podinfo-repo.yaml` for the first and `podinfo-kustomization.yaml` for the second.
 
 **1. A `GitRepository`**, telling Flux CD the new repository exists:
 
@@ -84,7 +84,7 @@ spec:
   url: https://github.com/stefanprodan/podinfo
 ```
 
-`interval` is how often Flux CD polls Git for new commits. `ref.branch` is the branch to track. Note the `namespace` is `flux-system` — a common mistake is putting this under the namespace you eventually want the *application* to run in, but this object is Flux CD's own configuration and belongs in `flux-system` regardless of where podinfo ends up.
+`interval` is how often Flux CD polls Git for new commits. `ref.branch` is the branch to track. Note the `namespace` is `flux-system`. A common mistake is putting this under the namespace you eventually want the *application* to run in, but this object is Flux CD's own configuration and belongs in `flux-system` regardless of where podinfo ends up.
 
 **2. A `Kustomization`**, telling Flux CD what to do once it sees a change:
 
@@ -104,9 +104,9 @@ spec:
   targetNamespace: default
 ```
 
-This `interval` is separate from the `GitRepository`'s — it's how often Flux CD re-checks that the live cluster state still matches what's in the `path`, and corrects drift if it doesn't (for example, if someone manually edits the Deployment's replica count). `prune: true` enables garbage collection: resources removed from Git are also removed from the cluster. `sourceRef` links this `Kustomization` back to the `GitRepository` above by name. `targetNamespace` is the one field in this file that is *not* `flux-system` — it's where the podinfo pods themselves will run.
+This `interval` is separate from the `GitRepository`'s: it's how often Flux CD re-checks that the live cluster state still matches what's in the `path`, and corrects drift if it doesn't (for example, if someone manually edits the Deployment's replica count). `prune: true` enables garbage collection: resources removed from Git are also removed from the cluster. `sourceRef` links this `Kustomization` back to the `GitRepository` above by name. `targetNamespace` is the one field in this file that is *not* `flux-system`: it's where the podinfo pods themselves will run.
 
-> **Note:** `source.toolkit.fluxcd.io/v1` and `kustomize.toolkit.fluxcd.io/v1` are the current, stable API versions for `GitRepository` and `Kustomization` — nothing here needs updating.
+> **Note:** `source.toolkit.fluxcd.io/v1` and `kustomize.toolkit.fluxcd.io/v1` are the current, stable API versions for `GitRepository` and `Kustomization`. Nothing here needs updating.
 
 ## Pushing and watching the sync
 
@@ -142,9 +142,9 @@ Then forward a local port to reach it:
 kubectl port-forward <pod-name> 9898:9898 --address 0.0.0.0
 ```
 
-`--address 0.0.0.0` makes the forwarded port listen on every network interface rather than only `localhost` — useful when you're running this on a remote VM rather than your own machine. Open `http://<server-address>:9898` in a browser to see the podinfo UI.
+`--address 0.0.0.0` makes the forwarded port listen on every network interface rather than only `localhost`, which is useful when you're running this on a remote VM rather than your own machine. Open `http://<server-address>:9898` in a browser to see the podinfo UI.
 
-This is more setup than running `kubectl apply -k` against the same directory directly. The payoff is that from here on, changes to the cluster go through Git — reviewed, versioned, and automatically reconciled — rather than through one-off commands.
+This is more setup than running `kubectl apply -k` against the same directory directly. The payoff is that from here on, changes to the cluster go through Git (reviewed, versioned, and automatically reconciled) rather than through one-off commands.
 
 ## Further reading
 
@@ -161,6 +161,6 @@ This is more setup than running `kubectl apply -k` against the same directory di
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

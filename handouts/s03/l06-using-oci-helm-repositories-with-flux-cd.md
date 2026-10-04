@@ -1,14 +1,14 @@
 ---
 title: "Using OCI Helm repositories with Flux CD"
 kicker: "FLUX CD · SECTION 3 · LECTURE 6"
-description: "OCI (Open Container Initiative) registries have become the default way to distribute Helm charts. Unlike traditional HTTP repositories that serve charts from a simple server"
+description: "OCI (Open Container Initiative) registries have become the default way to distribute Helm charts. Unlike traditional HTTP repositories that serve charts from a simple server using index.yaml files, OCI registries use digest-based references and support signing and scanning."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Using OCI Helm repositories with Flux CD
 
-*Section 3, Lecture 6 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 6, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -27,14 +27,14 @@ OCI (Open Container Initiative) registries have become the default way to distri
 Flux CD can connect to both public and private OCI registries to deploy Helm charts using GitOps. This lecture demonstrates both scenarios: pulling from a public registry (Bitnami) and pushing to and pulling from a private registry (GitLab Container Registry).
 
 > **Placeholders in this document.** Wherever you see `<your-gitlab-username>`,
-> `<your-repository>` or `<your-gitlab-token>`, substitute your own values — the
+> `<your-repository>` or `<your-gitlab-token>`, substitute your own values. The
 > examples will not work as written, because they point at a private registry.
 
 ## Key Concepts
 
 ### OCI vs. Traditional HTTP Repositories
 
-- **OCI**: Uses digest references for version immutability, supports signing and scanning, requires authentication before push/pull
+- **OCI**: Uses digest references for version immutability, supports signing and scanning, public or private depending on the registry (this lecture uses one of each)
 - **HTTP**: Uses `index.yaml` file, simpler setup, fewer security features
 
 ### OCI in Flux CD
@@ -149,7 +149,9 @@ helm package .
 ### 2. Push Chart to GitLab Container Registry
 
 ```bash
-# Login to GitLab registry (requires valid personal access token)
+# Login to GitLab registry (requires a valid access token with the
+# read_registry and write_registry scopes; read_registry alone logs in
+# but the push fails)
 helm registry login -u <your-gitlab-username> registry.gitlab.com
 # When prompted for password, paste your GitLab personal access token
 
@@ -172,6 +174,8 @@ First, encode that config:
 cat ~/.config/helm/registry/config.json | base64 | tr -d "\n"
 ```
 
+`base64` wraps long output across several lines; `tr -d "\n"` strips those newlines so the result is one long line you can paste into the Secret.
+
 Then create the Kubernetes secret:
 
 ```yaml
@@ -184,6 +188,8 @@ data:
   .dockerconfigjson: # paste the base64 output from above
 type: kubernetes.io/dockerconfigjson
 ```
+
+The same Secret can be created imperatively with `kubectl create secret docker-registry gitlab-credentials --docker-server=registry.gitlab.com --docker-username=<your-gitlab-username> --docker-password=<your-gitlab-token> --namespace=default`. In a GitOps workflow you keep the declarative manifest above in Git instead.
 
 ### 4. Create HelmRepository for Private Registry
 
@@ -228,7 +234,7 @@ spec:
 # Check all Helm sources (renders READY for OCI repositories; kubectl does not)
 flux get sources helm -A
 
-# The chart Flux actually pulled — this is the proof the Secret was accepted,
+# The chart Flux actually pulled: this is the proof the Secret was accepted,
 # because Flux only contacts the registry when it fetches the chart
 kubectl get helmchart
 
@@ -281,6 +287,6 @@ kubectl logs -l app.kubernetes.io/name=<release-name>
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

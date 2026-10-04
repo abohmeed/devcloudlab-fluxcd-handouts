@@ -295,9 +295,10 @@ The automation runs as soon as Flux applies it. The policy picked `5.0.3` and th
 flux get image update podinfo-automation
 ```
 
-It should be `True` with the message `repository up-to-date`: it has nothing left to do. Now pull the commit it made, and look at it:
+It should be `True` with the message `repository up-to-date`: it has nothing left to do. Reconcile it by hand to be sure it has finished, then pull the commit it made, and look at it:
 
 ```bash
+flux reconcile image update podinfo-automation
 git pull
 git log --oneline -3
 ```
@@ -342,10 +343,7 @@ kubectl get pods -n apps
 
 The deployment runs `podinfo:5.1.0` in a fresh, `Running` pod. Nobody ran `kubectl set image`.
 
-Four reconciles, because there are two loops here and they are separate: the image loop
-(repository → policy → automation) ends by writing to Git, and the Git loop
-(GitRepository → Kustomization) is what carries it into the cluster. Left alone, both run
-on their own intervals and the whole thing happens without you.
+Four reconciles, because there are two separate loops: the image loop (repository → policy → automation) ends by writing to Git, and the Git loop (GitRepository → Kustomization) carries it into the cluster.
 
 Finally, view all the image resources at once:
 
@@ -367,6 +365,10 @@ The ImagePolicy resolves to `5.1.0`, and its message says it was previously `5.0
   kubectl get secret gitlab-registry -n flux-system
   ```
 - Check that your credentials (username/token) are correct
+- Check the scan logs:
+  ```bash
+  kubectl logs -n flux-system deployment/image-reflector-controller
+  ```
 - For GitLab, ensure your token has the `read_registry` scope
 - Check the image path. A path with a missing segment points at a project that does not exist, and the registry answers with an authentication error rather than a 404, so "unauthorized" is as often a typo as it is a credential problem
 - Regenerate the Secret with the correct credentials if needed

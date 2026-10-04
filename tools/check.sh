@@ -4,11 +4,11 @@
 # Three rules here were WRONG when first written and flagged good handouts.
 # They are kept deliberately narrow, with the reason, so nobody re-broadens them:
 #   * exclamation marks are banned in PROSE, not in shebangs or sample values;
-#   * a conceptual lecture legitimately has no code block — only a lecture whose
+#   * a conceptual lecture legitimately has no code block, only a lecture whose
 #     video is a demo owes the student something copyable;
 #   * "runbook" as a plain English word is legitimate student content.
 #
-# Do NOT run this while writer agents are still working — you will read a
+# Do NOT run this while writer agents are still working, you will read a
 # half-written file and report a defect that does not exist.
 set -uo pipefail
 repo="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,18 +20,18 @@ FOOTCTA='<a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</st
 
 # --- prove the instrument is pointed at something ---------------------------
 # Without this, a missing or empty handouts/ printed "0 handouts checked /
-# ALL CLEAN" and exited 0 — a green result from a run that read nothing. Every
+# ALL CLEAN" and exited 0, a green result from a run that read nothing. Every
 # section must exist and hold at least one handout, so deleting a directory is
 # a failure rather than a silently smaller corpus.
 REQUIRED_SECTIONS="s01 s02 s03 s04 s05 s06 s07"
-[ -d handouts ] || { echo "FATAL: handouts/ does not exist — nothing was checked"; exit 2; }
+[ -d handouts ] || { echo "FATAL: handouts/ does not exist: nothing was checked"; exit 2; }
 for s in $REQUIRED_SECTIONS; do
-  [ -d "handouts/$s" ] || { echo "FATAL: handouts/$s is missing — the corpus is not what this check covers"; exit 2; }
+  [ -d "handouts/$s" ] || { echo "FATAL: handouts/$s is missing: the corpus is not what this check covers"; exit 2; }
   c=$(find "handouts/$s" -name '*.md' | wc -l | tr -d ' ')
   [ "$c" -gt 0 ] || { echo "FATAL: handouts/$s holds no handouts"; exit 2; }
 done
 total=$(find handouts -name '*.md' | wc -l | tr -d ' ')
-[ "$total" -ge 40 ] || { echo "FATAL: found $total handouts, expected at least 40 — corpus shrank"; exit 2; }
+[ "$total" -ge 40 ] || { echo "FATAL: found $total handouts, expected at least 40: corpus shrank"; exit 2; }
 
 fail=0
 printf "%-58s %6s  %s\n" FILE WORDS ISSUES
@@ -51,7 +51,7 @@ for f in $(find handouts -name '*.md' | sort); do
   grep -Fq "$FOOTIMG"  "$f"                 || issues="${issues}NO-FOOTER-LOGO "
   grep -Fq "$FOOTCTA"  "$f"                 || issues="${issues}NO-FOOTER-CTA "
 
-  # Headings are counted OUTSIDE fenced code only — a `# comment` line in a bash
+  # Headings are counted OUTSIDE fenced code only, a `# comment` line in a bash
   # block is not a second H1. Counting them naively flagged 11 good files.
   nh1=$(awk '/^```/{c=!c; next} !c && /^# /{n++} END{print n+0}' "$f")
   [ "$nh1" -ge 1 ] || issues="${issues}no-h1 "
@@ -76,14 +76,14 @@ for f in $(find handouts -name '*.md' | sort); do
   printf '%s\n' "$prose" | grep -q '!' && issues="${issues}exclamation "
 
   # --- facts this course got wrong before -------------------------------
-  # A removed apiVersion is only a defect when the handout PRESCRIBES it — i.e.
+  # A removed apiVersion is only a defect when the handout PRESCRIBES it, i.e.
   # on an `apiVersion:` line inside a fenced block a student would copy. Naming
   # one in prose is how the "Since this video was recorded" notes and the whole
   # migration lecture do their job, and flagging that flagged five correct files.
   # ...and a block introduced as the "Before:" half of a before/after pair is
   # exempt, because showing the removed apiVersion IS the teaching point there.
-  # Without this the migration lecture — the one handout whose whole job is the
-  # old APIs — is the only file the rule can never pass.
+  # Without this the migration lecture, the one handout whose whole job is the
+  # old APIs, is the only file the rule can never pass.
   prescribed=$(awk '
     /^```/ {
       # No \b here: BSD awk does not support it, and a rule that silently
@@ -120,7 +120,7 @@ for f in $(find handouts -name '*.md' | sort); do
   # protection too, and a course that teaches secrets has these legitimately.
   # `stringData:` with an obvious placeholder is fine; real-looking base64 is not.
   # A handout SHOULD show the real shape of a dockerconfigjson, so the rule is not
-  # "no base64" — it is "the base64 must decode to something visibly fake". The
+  # "no base64", it is "the base64 must decode to something visibly fake". The
   # first version of this flagged the private-registry handout, whose blob decodes
   # to REPLACE_ME:REPLACE_ME and is documented as a placeholder two lines above.
   for blob in $(awk '/^```/{c=!c;next} c' "$f" \
@@ -130,6 +130,14 @@ for f in $(find handouts -name '*.md' | sort); do
     printf '%s' "$dec" | grep -qiE 'REPLACE_ME|PLACEHOLDER|CHANGE_?ME|EXAMPLE|<your|your-(user|token|password)|dXNlcm5hbWU' \
       || issues="${issues}BASE64-SECRET-DATA "
   done
+
+  # --- house rules ---------------------------------------------------------
+  # No em-dash (U+2014) in any handout: producer ruling 2026-09-27.
+  grep -q $'\xe2\x80\x94' "$f" && issues="${issues}EM-DASH "
+  # A RapidAPI key is a 50-character token next to "rapidapi" / "X-RapidAPI-Key".
+  # Placeholders go in angle brackets, never a literal key.
+  grep -qiE 'rapidapi[^A-Za-z0-9]{0,40}[A-Za-z0-9]{50}([^A-Za-z0-9]|$)|[A-Za-z0-9]{50}[^A-Za-z0-9]{0,20}rapidapi' "$f" \
+    && issues="${issues}RAPIDAPI-KEY "
 
   # --- the handout's own job --------------------------------------------
   printf '%s\n' "$body" | grep -qE 'https?://' || issues="${issues}no-references "
@@ -145,6 +153,14 @@ for f in $(find handouts -name '*.md' | sort); do
   [ -z "$issues" ] && issues="clean" || fail=1
   printf "%-58s %6s  %s\n" "${f#handouts/}" "$w" "$issues"
 done
+
+# --- em-dashes outside the handouts (same rule, shared files) ----------------
+echo
+shared=$(grep -rl $'\xe2\x80\x94' README.md index.md _includes _layouts 2>/dev/null)
+if [ -n "$shared" ]; then
+  printf '%s\n' "$shared" | sed 's/^/EM-DASH in shared file: /'
+  fail=1
+fi
 
 echo
 n=$(find handouts -name '*.md' | wc -l | tr -d ' ')

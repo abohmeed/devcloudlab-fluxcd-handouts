@@ -1,14 +1,14 @@
 ---
 title: "Sending Flux CD notifications to Slack"
 kicker: "FLUX CD · SECTION 7 · LECTURE 2"
-description: "This lecture demonstrates how to configure Flux CD's notification controller to send real-time alerts to Slack whenever your cluster state changes. By integrating Flux CD"
+description: "This lecture demonstrates how to configure Flux CD's notification controller to send real-time alerts to Slack whenever your cluster state changes. By integrating Flux CD with Slack, you can monitor deployments, Git repository syncs, and Helm releases without constantly checking your cluster manually."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Sending Flux CD notifications to Slack
 
-*Section 7, Lecture 2 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 7, Lecture 2, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -17,7 +17,7 @@ description: "This lecture demonstrates how to configure Flux CD's notification 
 - Create a Slack app with a bot token and an incoming webhook for Flux CD notifications
 - Configure a Provider resource that tells Flux CD how to reach your Slack channel
 - Configure an Alert resource that triggers on Kustomization, GitRepository, and HelmRelease events
-- Filter notifications by event severity and by resource name using inclusion and exclusion lists
+- Filter notifications by event severity, and by event message using inclusion and exclusion lists
 
 ## Overview
 
@@ -34,7 +34,7 @@ Flux CD supports many notification platforms out of the box (Slack, Microsoft Te
 
 ## Prerequisites
 
-- A working Kubernetes cluster with Flux CD installed (v2.0 or later)
+- A working Kubernetes cluster with Flux CD installed (v2.2 or later, the first release with the `v1beta3` notification API used here)
 - A Slack workspace where you have permission to create apps and webhooks
 - `kubectl` configured to access your cluster
 - `flux` CLI installed locally
@@ -46,22 +46,27 @@ Flux CD supports many notification platforms out of the box (Slack, Microsoft Te
 
 ### 1. Create a Slack App and Webhook
 
+0. In your Slack workspace, create a dedicated channel named `flux-cd-notifications` (Slack adds the `#` itself). Every later step points at this channel by name.
 1. Go to [api.slack.com/apps](https://api.slack.com/apps)
 2. Click **Create an App** → **Blank app** (earlier versions of this dialog called it **From scratch**)
-3. Name your app (e.g., `fluxcd-notifications`)
+3. Name your app (e.g., `fluxcd`)
 4. Select your Slack workspace
 5. Navigate to **OAuth & Permissions** in the left sidebar
 6. Under **Bot Token Scopes**, click **Add an OAuth Scope** and select `chat:write`
-7. Scroll to the top and copy your **Bot User OAuth Token** (starts with `xoxb-`)
-8. Go to **Incoming Webhooks** in the left sidebar
-9. Toggle **Activate Incoming Webhooks** to **On**
-10. Click **Add New Webhook to Workspace**
-11. Select the channel where you want notifications (or create a new one, e.g., `#flux-cd-notifications`)
-12. Copy the **Webhook URL** that is generated
+7. Go to **Incoming Webhooks** in the left sidebar
+8. Toggle **Activate Incoming Webhooks** to **On**
+9. Click **Add New Webhook to Workspace**
+10. Slack asks for permission to install the app in your workspace: click **Allow**. This is the click that installs the app, and installing it is what creates the bot token.
+11. Select the `#flux-cd-notifications` channel as the destination
+12. Copy the **Webhook URL** from the new row on the **Incoming Webhooks** page
+13. Go back to **OAuth & Permissions** and copy the **Bot User OAuth Token** at the top of the page (it starts with `xoxb-`). In a brand-new app this token does not exist until the app has been installed, which is why it comes last.
 
-You now have two critical values:
-- **Bot User OAuth Token** (e.g., `xoxb-<your-bot-token>`)
-- **Webhook URL** (e.g., `https://hooks.slack.com/services/<T-ID>/<B-ID>/<secret>`)
+You now have two critical values. Store them in two environment variables in your terminal, so the real values never appear in the commands that follow:
+
+```bash
+export SLACK_BOT_TOKEN='<paste your Bot User OAuth Token>'
+export SLACK_WEBHOOK_URL='<paste your Webhook URL>'
+```
 
 ### 2. Create a Kubernetes Secret
 
@@ -69,11 +74,9 @@ Store the OAuth token as a Kubernetes secret in the `flux-system` namespace:
 
 ```bash
 kubectl create secret generic slack-secret \
-  --from-literal=token=xoxb-YOUR_OAUTH_TOKEN_HERE \
+  --from-literal=token="$SLACK_BOT_TOKEN" \
   -n flux-system
 ```
-
-Replace `xoxb-YOUR_OAUTH_TOKEN_HERE` with your actual Bot User OAuth Token.
 
 Verify the secret was created:
 
@@ -83,52 +86,64 @@ kubectl get secret slack-secret -n flux-system
 
 ### 3. Create the Slack Provider
 
-Create a `slack/` directory in your Git repository and define the notification provider:
+Create a `slack/` directory in your Git repository, then let the `flux` CLI generate the provider and export it to a YAML file, so it can be committed to Git:
 
 ```bash
 mkdir -p slack
 cd slack
+
+flux create alert-provider slack \
+  --type slack \
+  --channel flux-cd-notifications \
+  --address "$SLACK_WEBHOOK_URL" \
+  --secret-ref slack-secret \
+  --export > slack-provider.yaml
 ```
 
-Create a file named `slack-provider.yaml`:
+The command prints nothing; `slack-provider.yaml` now exists. View it with `cat slack-provider.yaml`:
 
 ```yaml
+---
 apiVersion: notification.toolkit.fluxcd.io/v1beta3
 kind: Provider
 metadata:
   name: slack
   namespace: flux-system
 spec:
-  type: slack
+  address: https://hooks.slack.com/services/...
   channel: flux-cd-notifications
-  address: https://hooks.slack.com/services/<T-ID>/<B-ID>/<secret>
   secretRef:
     name: slack-secret
+  type: slack
 ```
 
 **What this does:**
-- `type: slack` — Tells Flux to use Slack as the notification platform
-- `channel: flux-cd-notifications` — The Slack channel to send messages to
-- `address` — The incoming webhook URL from Step 1
-- `secretRef` — References the Kubernetes secret containing the OAuth token
+- `type: slack`: tells Flux to use Slack as the notification platform
+- `channel: flux-cd-notifications`: the Slack channel to send messages to
+- `address`: the incoming webhook URL from Step 1 (anyone who can read it can post to your channel, so treat the file as sensitive)
+- `secretRef`: references the Kubernetes secret containing the OAuth token
 
-Alternatively, generate this with the `flux` CLI:
-
-```bash
-flux create alert-provider slack \
-  --type slack \
-  --channel flux-cd-notifications \
-  --address 'https://hooks.slack.com/services/<T-ID>/<B-ID>/<secret>' \
-  --secret-ref slack-secret \
-  --export > slack-provider.yaml
-```
+No additional changes are needed to the provider.
 
 ### 4. Create the Alert Resource
 
-Define which Flux CD events trigger notifications:
+Define which Flux CD events trigger notifications, again with the CLI:
 
 ```bash
-cat > reconciliation-alert.yaml << 'EOF'
+flux create alert \
+  --event-severity info \
+  --event-source 'Kustomization/*' \
+  --event-source 'GitRepository/*' \
+  --event-source 'HelmRelease/*' \
+  --provider-ref slack \
+  flux-system \
+  --export > reconciliation-alert.yaml
+```
+
+The command cannot set every field, so open `reconciliation-alert.yaml` in your editor and add `summary` and `eventMetadata` under `spec`. The file should end up like this:
+
+```yaml
+---
 apiVersion: notification.toolkit.fluxcd.io/v1beta3
 kind: Alert
 metadata:
@@ -149,15 +164,14 @@ spec:
     name: '*'
   providerRef:
     name: slack
-EOF
 ```
 
 **What this does:**
-- `eventSeverity: info` — Send notifications for all events (info, warning, error). Use `error` for only failures.
-- `summary` — Optional short description included in Slack messages (max 255 characters). Note that `.spec.summary` is **deprecated** at `v1beta3`: it still works, but the notification controller logs `specifying an alert summary with '.spec.summary' is deprecated, use '.spec.eventMetadata.summary' instead` on every event it sends. In new manifests, prefer a `summary` key inside `eventMetadata`
-- `eventMetadata` — Key-value pairs sent with each notification (useful for filtering or routing). They are rendered as fields on the Slack message
-- `eventSources` — Which resources to monitor. The `*` (wildcard) means all instances of that kind
-- `providerRef` — Links to the Slack provider created above
+- `eventSeverity: info`: the default, which sends all updates. Set it to `error` to receive messages only when things go wrong.
+- `summary`: optional short description included in Slack messages (max 255 characters). Note that `.spec.summary` is **deprecated** at `v1beta3`: it still works, but the notification controller logs `specifying an alert summary with '.spec.summary' is deprecated, use '.spec.eventMetadata.summary' instead` on every event it sends. In new manifests, prefer a `summary` key inside `eventMetadata`
+- `eventMetadata`: key-value pairs sent with each notification (useful for filtering or routing). They are rendered as fields on the Slack message
+- `eventSources`: which resources to monitor. The `*` (wildcard) means all instances of that kind
+- `providerRef`: links to the Slack provider created above
 
 Commit both files to your repository:
 
@@ -181,7 +195,7 @@ flux reconcile kustomization flux-system --with-source
 
 One thing to check if nothing arrives: Flux only builds the path it was
 bootstrapped with. If your cluster was bootstrapped with, say, `--path=./clusters/staging`,
-then manifests committed at the repository root are never applied — and the
+then manifests committed at the repository root are never applied, and the
 reconcile above still reports success, because the path it *does* watch is
 healthy. Confirm with:
 
@@ -256,8 +270,7 @@ flux reconcile kustomization flux-system --with-source
 Check your Slack channel. You should see messages like:
 
 - GitRepository sync event (detecting the new files pushed)
-- Kustomization reconciliation event (applying the nginx deployment)
-- Deployment creation event
+- Kustomization reconciliation event, whose body reports the nginx deployment being created (`Deployment/default/nginx created`)
 
 Each message includes:
 - The event source (e.g., GitRepository, Kustomization)
@@ -286,7 +299,9 @@ next. The revision is the full commit sha, not the short one Git printed.
 
 ### 7. Fine-Tune Notifications (Optional)
 
-You can filter notifications using inclusion and exclusion lists based on regular expressions:
+You can filter notifications using inclusion and exclusion lists. Both are lists of regular expressions that Flux matches against the **event message** (not the name of the object that raised it). With an `exclusionList`, any event whose message matches is not sent. With an `inclusionList`, only events whose message matches are sent. When a message matches both, the exclusion list wins.
+
+In this example both lists match the string "invalid", so the exclusion rule takes precedence and no event whose message contains "invalid" is sent:
 
 ```yaml
 apiVersion: notification.toolkit.fluxcd.io/v1beta3
@@ -303,14 +318,12 @@ spec:
     name: '*'
   providerRef:
     name: slack
-  # Only send notifications for these resources (inclusion)
+  # Only send events whose message matches (inclusion)
   inclusionList:
-  - "flux-system"
-  - "production-.*"
-  # Never send notifications matching these patterns (exclusion takes precedence)
+  - ".*invalid.*"
+  # Never send events whose message matches (exclusion takes precedence)
   exclusionList:
-  - ".*-dev"
-  - "test-.*"
+  - ".*invalid.*"
 ```
 
 ---
@@ -372,7 +385,7 @@ spec:
 
 ---
 
-## API Versions — Important
+## API Versions: Important
 
 This lecture uses `notification.toolkit.fluxcd.io/v1beta3` for Alert and Provider resources. Note that in the same API group, Receiver is stable at `v1`. Do not assume all resources in an API group use the same version. If you get an error like "no matches for kind Alert", run `kubectl api-resources --api-group=notification.toolkit.fluxcd.io` on your cluster to see which version each resource actually supports.
 
@@ -394,7 +407,7 @@ This lecture uses `notification.toolkit.fluxcd.io/v1beta3` for Alert and Provide
 
 **Too many notifications:**
 - Adjust `eventSeverity` from `info` to `error` to only alert on failures
-- Use `inclusionList` and `exclusionList` to filter which resources send notifications
+- Use `inclusionList` and `exclusionList` to filter events by their message
 
 ---
 
@@ -404,7 +417,7 @@ This lecture uses `notification.toolkit.fluxcd.io/v1beta3` for Alert and Provide
 - [Slack Incoming Webhooks API](https://api.slack.com/messaging/webhooks)
 - [Flux CD Event Sources](https://fluxcd.io/flux/components/notification/alerts/)
 - [Notification Providers](https://fluxcd.io/flux/components/notification/provider/)
-- [Flux CD — Setting Up Alerts (Notifications)](https://fluxcd.io/flux/monitoring/alerts/)
+- [Flux CD: Setting Up Alerts (Notifications)](https://fluxcd.io/flux/monitoring/alerts/)
 
 ---
 
@@ -414,6 +427,6 @@ This lecture uses `notification.toolkit.fluxcd.io/v1beta3` for Alert and Provide
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

@@ -1,14 +1,14 @@
 ---
 title: "Using HTTP Helm repositories with Flux CD"
 kicker: "FLUX CD · SECTION 3 · LECTURE 5"
-description: "This lecture covers how to configure Flux CD to deploy applications using Helm charts stored in HTTP-based Helm repositories. You learned how to create both a"
+description: "This lecture covers how to configure Flux CD to deploy applications using Helm charts stored in HTTP-based Helm repositories. You learned how to create both a HelmRepository resource, to define the chart repository, and a HelmRelease resource, to deploy a chart from it."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Using HTTP Helm repositories with Flux CD
 
-*Section 3, Lecture 5 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 5, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -32,7 +32,7 @@ This lecture covers how to configure Flux CD to deploy applications using Helm c
 
 **Authentication:** HTTP repositories can be public or private. For private repositories, Flux CD can reference a Kubernetes Secret containing authentication credentials.
 
-**The URL is resolved inside the cluster, not on your machine.** The component that fetches the chart index is Flux CD's `source-controller`, and the component that pulls the chart archive is `helm-controller`. Both run as pods, so both resolve the hostname in `spec.url` through the cluster's DNS service. That service does not read your workstation's `/etc/hosts` file and does not see your `kubectl port-forward` tunnels: a URL that works perfectly in your own terminal can still be unreachable for Flux CD. If the HelmRepository stays `READY=False` with a message like `dial tcp 127.0.0.1:80: connect: connection refused`, this is why — the name resolved, but it resolved to the pod itself. Use a name the cluster can resolve, such as an in-cluster Service (`http://chartrepo-server.chartrepo.svc.cluster.local:8080`) or a real DNS record pointing at your ingress controller.
+**The URL is resolved inside the cluster, not on your machine.** The component that fetches the chart, both the repository index and the chart archive, is Flux CD's `source-controller`. It runs as a pod, so it resolves the hostname in `spec.url` through the cluster's DNS service. That service does not read your workstation's `/etc/hosts` file and does not see your `kubectl port-forward` tunnels: a URL that works perfectly in your own terminal can still be unreachable for Flux CD. If the HelmRepository stays `READY=False` with a message like `dial tcp 127.0.0.1:80: connect: connection refused`, this is why: the name resolved, but it resolved to the pod itself. Use a name the cluster can resolve, such as an in-cluster Service (`http://chartrepo-server.chartrepo.svc.cluster.local:8080`) or a real DNS record pointing at your ingress controller.
 
 ## Commands Used
 
@@ -128,10 +128,10 @@ spec:
 ## API Version Reference
 
 This lecture uses the current Flux CD API versions:
-- `source.toolkit.fluxcd.io/v1` — for HelmRepository resources
-- `helm.toolkit.fluxcd.io/v2` — for HelmRelease resources
+- `source.toolkit.fluxcd.io/v1`: for HelmRepository resources
+- `helm.toolkit.fluxcd.io/v2`: for HelmRelease resources
 
-These versions are current as of Flux CD v2.7.0 and later. The previous versions (`v1beta2` and `v2beta1`) were removed and are no longer supported.
+This lecture requires Flux CD v2.7.0 or later. Do not use the older beta versions (`v1beta2` and `v2beta1`) in new manifests: Flux removed the `v2beta1` HelmRelease API in v2.7, and the beta source APIs are deprecated.
 
 ## Further Reading
 
@@ -149,6 +149,6 @@ These versions are current as of Flux CD v2.7.0 and later. The previous versions
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

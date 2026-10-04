@@ -2,7 +2,7 @@
 # Verifies every reference URL in the handouts.
 #
 # A 200 is NOT sufficient. Docs sites keep moved pages live as stubs that read
-# "This page has moved" and still return 200 — a link to one is dead for a
+# "This page has moved" and still return 200, so a link to one is dead for a
 # reader even though every status check passes. So this greps the body too.
 #
 # Placeholder and illustrative hosts are expected to fail and are skipped.
@@ -18,10 +18,10 @@ SKIP='example\.com|example-org|github\.com/example/|your-org|<your|my-org|localh
 
 # Prove the instrument is pointed at something. A missing handouts/ used to
 # print "checked 0 URLs; 0 bad / all reference links good" and exit 0.
-[ -d handouts ] || { echo "FATAL: handouts/ does not exist — no links were checked"; exit 2; }
+[ -d handouts ] || { echo "FATAL: handouts/ does not exist, so no links were checked"; exit 2; }
 ALL=$(grep -rho 'https://[^)"`, <]*' handouts/ README.md 2>/dev/null | sed 's/[.,;:]*$//' | sort -u)
 [ "$(printf '%s\n' "$ALL" | grep -c .)" -ge 100 ] || {
-  echo "FATAL: only $(printf '%s\n' "$ALL" | grep -c .) URLs found across the corpus, expected 100+ — this run did not read the handouts"; exit 2; }
+  echo "FATAL: only $(printf '%s\n' "$ALL" | grep -c .) URLs found across the corpus, expected 100+. This run did not read the handouts"; exit 2; }
 
 # Print what is exempt, every run. An exemption that outlives the placeholder it
 # was written for is indistinguishable from coverage, so it has to stay visible.

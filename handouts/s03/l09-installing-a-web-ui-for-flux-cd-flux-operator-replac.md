@@ -1,14 +1,14 @@
 ---
-title: "Installing a web UI for Flux CD — Flux Operator replaces Weave GitOps"
+title: "Installing a web UI for Flux CD (Flux Operator replaces Weave GitOps)"
 kicker: "FLUX CD · SECTION 3 · LECTURE 9"
-description: "Flux CD is powerful from the command line, but sometimes a visual interface is helpful for understanding your deployments at a glance. The Flux Operator, maintained by"
+description: "Flux CD is powerful from the command line, but sometimes a visual interface is helpful for understanding your deployments at a glance. The Flux Operator, maintained by ControlPlane, a company whose team includes core maintainers of the Flux project, provides a web dashboard for Flux CD."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
-# Installing a web UI for Flux CD — Flux Operator replaces Weave GitOps
+# Installing a web UI for Flux CD (Flux Operator replaces Weave GitOps)
 
-*Section 3, Lecture 9 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 9, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -22,7 +22,7 @@ description: "Flux CD is powerful from the command line, but sometimes a visual 
 
 ## Overview
 
-Flux CD is powerful from the command line, but sometimes a visual interface is helpful for understanding your deployments at a glance. The Flux Operator, maintained by ControlPlane in close collaboration with the Flux project, provides a web dashboard for Flux CD. It allows you to:
+Flux CD is powerful from the command line, but sometimes a visual interface is helpful for understanding your deployments at a glance. The Flux Operator, maintained by ControlPlane, a company whose team includes core maintainers of the Flux project, provides a web dashboard for Flux CD. It allows you to:
 
 - View all deployed applications (Helm releases and Kustomizations)
 - See the status and details of each resource
@@ -138,7 +138,7 @@ Once the HelmRelease is deployed:
    kubectl get ingress -n flux-system
    ```
 
-3. Make the hostname resolve. `dashboard.local` is not a real DNS name — it only works because you add it to the `hosts` file of the machine running the **browser**, pointing at whatever address reaches your ingress controller:
+3. Make the hostname resolve. `dashboard.local` is not a real DNS name. It only works because you add it to the `hosts` file of the machine running the **browser**, pointing at whatever address reaches your ingress controller:
 
    - Browser on the same machine as the cluster (a local KinD cluster with port 80 published): `127.0.0.1 dashboard.local`
    - Browser on your laptop, cluster on a remote VM or server: `<that machine's IP address> dashboard.local`
@@ -161,15 +161,15 @@ There is **no left menu**. The UI is a top bar above one long scrolling home pag
 
 A column of cards:
 
-- **All Systems Operational** — one green banner for the whole cluster
-- **Cluster Info** — Kubernetes version and node count, the Flux Operator version, the Flux distribution version, the platform and the controller-pod count
-- **Cluster Sync** — the Kustomization that syncs the cluster, its Git URL, its path and the revision currently applied
-- **Flux Components** — every Flux controller (source-controller, kustomize-controller, helm-controller, notification-controller) with its image version and whether it is Ready
-- **Flux Resources** — a count tile per Flux CRD, grouped **Appliers**, **Sources**, **Notifications** and **Image Automation**. Each tile links into the resource list filtered to that kind
+- **All Systems Operational**: one green banner for the whole cluster
+- **Cluster Info**: Kubernetes version and node count, the Flux Operator version, the Flux distribution version, the platform and the controller-pod count
+- **Cluster Sync**: the Kustomization that syncs the cluster, its Git URL, its path and the revision currently applied
+- **Flux Components**: every Flux controller (source-controller, kustomize-controller, helm-controller, notification-controller) with its image version and whether it is Ready
+- **Flux Resources**: a count tile per Flux CRD, grouped **Appliers**, **Sources**, **Notifications** and **Image Automation**. Each tile links into the resource list filtered to that kind
 
 ### Resources
 
-One list of everything Flux manages: HelmReleases, Kustomizations, HelmCharts, and your sources — GitRepositories and HelmRepositories — together rather than on separate pages. Each row shows:
+One list of everything Flux manages: HelmReleases, Kustomizations, HelmCharts, and your sources (GitRepositories and HelmRepositories), together rather than on separate pages. Each row shows:
 - A kind badge (`HR`, `KS`, `GITREPO`, `HELMREPO`, `HELMCHART`), coloured by status
 - `namespace/name`
 - The object's own status message
@@ -178,13 +178,13 @@ One list of everything Flux manages: HelmReleases, Kustomizations, HelmCharts, a
 Filters across the top: name, namespace, kind and status.
 
 Click a row to open its details. A HelmRelease detail is three cards, each tabbed:
-- **Reconciler** — Overview · History · Events · Values · Specification · Status
-- **Managed Objects** — Overview · Graph · Inventory · Resource Usage. The inventory is every Kubernetes object that resource created: the Deployment, Service, Ingress, ServiceAccount, NetworkPolicy, RBAC and any CRDs
-- **Source** — the HelmRepository or GitRepository it came from
+- **Reconciler**: Overview · History · Events · Values · Specification · Status
+- **Managed Objects**: Overview · Graph · Inventory · Resource Usage. The inventory is every Kubernetes object that resource created: the Deployment, Service, Ingress, ServiceAccount, NetworkPolicy, RBAC and any CRDs
+- **Source**: the HelmRepository or GitRepository it came from
 
 ### Workloads
 
-The Deployments running in the cluster and which Flux object manages each. A workload's own detail page opens with a provenance chain across the top — HelmRepository → HelmRelease → Deployment → Pods.
+The Deployments running in the cluster and which Flux object manages each. A workload's own detail page opens with a provenance chain across the top: HelmRepository → HelmRelease → Deployment → Pods.
 
 ### Events
 
@@ -192,11 +192,11 @@ A log of Flux reconciliation events: successful syncs, errors and failures, and 
 
 ### Favorites
 
-The resources you have starred to keep at hand — useful on a cluster with more in it than a lab has.
+The resources you have starred to keep at hand, useful on a cluster with more in it than a lab has.
 
 ### The manifest view
 
-There is no tab called "YAML". Open a resource and the **Specification** tab on its Reconciler card holds the `spec` as stored in the cluster, with **Status** beside it holding the rest — together, the object `kubectl get -o yaml` would print for you. On a narrow window the tab abbreviates to **Spec**.
+There is no tab called "YAML". Open a resource and the **Specification** tab on its Reconciler card holds the `spec` as stored in the cluster, with **Status** beside it holding the rest. Together they are the object `kubectl get -o yaml` would print for you. On a narrow window the tab abbreviates to **Spec**.
 
 ### Metrics
 
@@ -204,7 +204,7 @@ CPU and memory usage for deployed workloads requires the `metrics-server` addon.
 
 ### What the UI will not do by default
 
-The web UI is **read-only** out of the box. There are no sync, suspend or resume buttons, because write actions need both an authenticated identity and the `web.userActions` values configured — neither of which this installation has. Use `flux reconcile` and `flux suspend` from the CLI.
+The web UI is **read-only** out of the box. There are no sync, suspend or resume buttons, because write actions need both an authenticated identity and the `web.userActions` values configured, and this installation has neither. Use `flux reconcile` and `flux suspend` from the CLI.
 
 ## Complete Manifest Example
 
@@ -257,8 +257,8 @@ spec:
 - **Web UI is declarative**: Like any other Helm release, the dashboard is managed by Flux through a GitOps workflow. You commit YAML to Git, and Flux deploys it.
 - **CLI equivalence**: Everything you can see in the Flux Operator dashboard is also available through `kubectl` and `flux` CLI commands. The dashboard is a convenience, not a requirement.
 - **The dashboard is another workload**: Like any other application in your cluster, the dashboard itself is managed by Flux. You can suspend, update, or remove it just like any other HelmRelease.
-- **No authentication by default**: Unlike Weave GitOps (the UI Weaveworks built for Flux before the company shut down), this one ships without login by default, which is appropriate for private networks and acceptable for lab environments. Authentication is added through SSO — the operator documents OIDC providers such as Dex, Keycloak and Entra ID.
-- **Which UI is "the" UI**: the Flux project lists several UIs in its ecosystem page and does not crown one. The Flux Operator is the one built by ControlPlane, the company the Flux maintainers work at, and it is the one this course uses.
+- **No authentication by default**: Unlike Weave GitOps (the UI Weaveworks built for Flux before the company shut down), this one ships without login by default, which is appropriate for private networks and acceptable for lab environments. Authentication is added through SSO: the operator documents OIDC providers such as Dex, Keycloak and Entra ID.
+- **Which UI is "the" UI**: the Flux project lists several UIs in its ecosystem page and does not crown one. The Flux Operator is the one built by ControlPlane, a company whose team includes core maintainers of the Flux project, and it is the one this course uses.
 
 ## Troubleshooting
 
@@ -278,7 +278,7 @@ Alternatively, skip the hostname and the ingress entirely with a port-forward:
 ```bash
 kubectl port-forward -n flux-system svc/flux-web-flux-operator 8080:9080
 ```
-Then open `http://localhost:8080`. The web UI listens on Service port **9080**; port 8080 on that same Service is the metrics endpoint, and there is no port 80 — `8080:80` fails with `Service flux-web-flux-operator does not have a service port 80`.
+Then open `http://localhost:8080`. The web UI listens on Service port **9080**; port 8080 on that same Service is the metrics endpoint, and there is no port 80: `8080:80` fails with `Service flux-web-flux-operator does not have a service port 80`.
 
 **Resource Usage tab is empty:**
 Ensure metrics-server is installed:
@@ -303,6 +303,6 @@ If it's not installed and you need metrics, install it. For development, this is
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

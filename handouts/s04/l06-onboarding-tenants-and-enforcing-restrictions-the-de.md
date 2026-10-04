@@ -1,14 +1,14 @@
 ---
-title: "Onboarding tenants and enforcing restrictions — the dev team"
+title: "Onboarding tenants and enforcing restrictions: the dev team"
 kicker: "FLUX CD · SECTION 4 · LECTURE 6"
-description: "This lecture demonstrates how a development team prepares Kubernetes manifests and Flux CD resources for deployment to a multi-tenant cluster. Using the weather app"
+description: "This lecture demonstrates how a development team prepares Kubernetes manifests and Flux CD resources for deployment to a multi-tenant cluster. It uses the weather app, a multi-service application packaged as Helm charts, with a Kustomize base and per-environment patches for staging and production."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
-# Onboarding tenants and enforcing restrictions — the dev team
+# Onboarding tenants and enforcing restrictions: the dev team
 
-*Section 4, Lecture 6 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 4, Lecture 6, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -28,6 +28,10 @@ This lecture demonstrates how a development team prepares Kubernetes manifests a
 - Create Helm Releases that respect service accounts and cluster boundaries
 - Use Kustomize overlays to customize Helm values per environment
 - Secure sensitive values (with security best practices discussed separately)
+
+The finished result of this lecture is the
+[myweatherapp repository](https://gitlab.com/abohmeed/myweatherapp), which the next
+lecture deploys. It is public, so you can compare your files against it.
 
 ## The Weather App Architecture
 
@@ -182,9 +186,13 @@ spec:
     apikey: <your-rapidapi-key>
 ```
 
-The weather service needs a RapidAPI subscription key. Put your own key in place of
-`<your-rapidapi-key>` — and once the app is real, keep it out of Git altogether, using
-one of the approaches in the security notes below.
+The weather service needs a RapidAPI subscription key. The lecture types it inline as
+the `apikey` value to keep the example short, so commit only the placeholder
+`<your-rapidapi-key>` here and never your real key. The finished myweatherapp
+repository, which the next lecture deploys, takes the key out of `values` altogether:
+its `weatherapp-weather` HelmRelease reads it through `valuesFrom`, from an `api-key`
+Secret that the admin team creates directly in the `apps` namespace in the next
+lecture. That way the real key never reaches Git.
 
 These Helm Release manifests define how the application charts are deployed. Each specifies:
 - The service account (`dev`) that must exist in the `apps` namespace
@@ -202,7 +210,7 @@ resources:
 ```
 
 This four-line file makes `base/` a kustomization root of its own. It is what lets each
-overlay reference the **directory** `../base` rather than a file inside it — Kustomize
+overlay reference the **directory** `../base` rather than a file inside it. Kustomize
 refuses to load a file that sits outside the root it was pointed at, and an overlay
 that says `../base/release.yaml` fails with `security; file ... is not in or below ...`.
 
@@ -324,7 +332,7 @@ spec:
 Locks the version and sets the production hostname.
 
 **production/kustomization.yaml**:
-Identical to the staging version—it references the same patch files.
+Identical to the staging version: it references `../base` and the two patch files that sit next to it.
 
 ## Workflow Summary
 
@@ -368,6 +376,6 @@ This course uses Helm Toolkit Flux CD with `apiVersion: helm.toolkit.fluxcd.io/v
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

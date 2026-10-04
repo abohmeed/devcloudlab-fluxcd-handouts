@@ -1,14 +1,14 @@
 ---
 title: "Installing and configuring Git"
 kicker: "FLUX CD · SECTION 2 · LECTURE 1"
-description: "This lecture covers installing Git on Windows, macOS, and Linux, then configuring Git for local use and setting up SSH authentication for remote"
+description: "This lecture covers installing Git on Windows, macOS, and Linux, then configuring Git for local use and setting up SSH authentication for remote repositories."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Installing and configuring Git
 
-*Section 2, Lecture 1 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 1, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -17,8 +17,8 @@ description: "This lecture covers installing Git on Windows, macOS, and Linux, t
 - Install Git on Windows, macOS, and Linux and verify the installation
 - Configure your Git identity (user name and email) and default text editor
 - Generate an SSH key pair and register it with the SSH agent
-- Add your public key to GitLab and test the SSH connection
-- Locate and read your global Git configuration file
+- Add your public key to GitLab
+- Test the SSH connection and read your global Git configuration file (extras, not shown in the video)
 
 ## Overview
 
@@ -30,7 +30,8 @@ This lecture covers installing Git on Windows, macOS, and Linux, then configurin
 
 1. Download Git for Windows from https://gitforwindows.org
 2. Run the installer and accept the defaults
-3. Verify installation:
+3. Open **Git Bash**, the terminal that Git for Windows installs with Git built in. Run your Git commands there.
+4. Verify installation:
    ```bash
    git --version
    ```
@@ -97,9 +98,9 @@ Display the configured email address.
 
 ### Set Your Default Text Editor
 
-Git uses a text editor for commit messages and merge conflict resolution. Choose one:
+Git uses a text editor for commit messages and merge conflict resolution. By default it uses your system's default editor, which is often Vim or Nano. To choose a different one, set it explicitly:
 
-**Vim (default, minimal):**
+**Vim:**
 ```bash
 git config --global core.editor "vim"
 ```
@@ -170,13 +171,17 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIxxx... your.email@example.com
 ## Adding Your SSH Key to GitLab
 
 1. Visit https://gitlab.com and log in
-2. Click your profile icon (top right corner)
-3. Select Preferences
-4. Click SSH Keys (left sidebar)
+2. Click your avatar in the left sidebar
+3. Select Edit profile
+4. Click SSH Keys, then Add new key
 5. Paste your public key (from `cat ~/.ssh/id_ed25519.pub`) into the Key box
 6. Click Add key
 
+> **Since this video was recorded:** GitLab has moved this page. The video clicks the profile icon in the top right corner, then Preferences, then SSH Keys. Today the path is the avatar in the left sidebar, then Edit profile, then SSH Keys, then Add new key.
+
 ### Test Your SSH Connection
+
+*Not shown in the video: an optional check that your key works.*
 
 ```bash
 ssh -T git@gitlab.com
@@ -191,9 +196,11 @@ ED25519 key fingerprint is SHA256:...
 Are you sure you want to continue connecting (yes/no/[fingerprint])?
 ```
 
-Type `yes` and press Enter — pressing Enter on its own just re-asks. If everything is set up correctly, a welcome message from GitLab follows.
+Type `yes` and press Enter. Pressing Enter on its own just re-asks. If everything is set up correctly, a welcome message from GitLab follows.
 
 ## Reference: Global Configuration Files
+
+*Not shown in the video: where the settings above are stored.*
 
 Your Git configuration is stored in a plain text file in your home directory:
 
@@ -206,8 +213,6 @@ Your Git configuration is stored in a plain text file in your home directory:
     email = your.email@example.com
 [core]
     editor = vim
-[ssh]
-    # Additional SSH options can go here
 ```
 
 You can also view all your global configuration with:
@@ -246,6 +251,6 @@ List all global Git settings.
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

@@ -1,14 +1,14 @@
 ---
 title: "Deploying applications using Flux CD with Git as the Helm chart source"
 kicker: "FLUX CD · SECTION 3 · LECTURE 2"
-description: "In this lecture, you learned how to deploy Helm Chart releases to Kubernetes using Flux CD with Git as the source of truth. We covered two approaches to Helm Chart"
+description: "In this lecture, you learned how to deploy Helm Chart releases to Kubernetes using Flux CD with Git as the source of truth. We covered two approaches to Helm Chart installation and demonstrated the first: a chart stored in the Flux Git repository."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Deploying applications using Flux CD with Git as the Helm chart source
 
-*Section 3, Lecture 2 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 2, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -27,13 +27,13 @@ In this lecture, you learned how to deploy Helm Chart releases to Kubernetes usi
 1. **Local Chart Source**: Managing your own chart files and deploying directly from a directory path
 2. **Package Repository**: Using pre-built, tested charts from repositories like Bitnami
 
-We demonstrated the first approach: creating a Helm Chart, packaging it in a Git repository, and letting Flux CD automatically deploy it using a HelmRelease resource.
+We demonstrated the first approach: creating a Helm Chart, storing its source in a Git repository, and letting Flux CD automatically deploy it using a HelmRelease resource.
 
 ## Key Concepts
 
 ### Why separate directories?
 - Flux CD's Kustomization controller scans the `clusters/` directory for Kubernetes manifests
-- Helm templates must be placed at the repository root or in a separate dedicated directory
+- Helm chart files must live in a separate Git repository, or in the Flux repository root outside `clusters/` (this lecture uses `charts/`)
 - This prevents Flux from attempting to parse Helm templates as raw Kubernetes YAML
 
 ### HelmRelease Custom Resource
@@ -58,20 +58,20 @@ spec:
 ```
 
 **What each field means:**
-- `apiVersion: helm.toolkit.fluxcd.io/v2` — Specifies the Helm Toolkit API version for Flux v2
-- `kind: HelmRelease` — Tells Flux to hand this manifest to the helm-controller
-- `metadata.name` — The name of this Helm release
-- `metadata.namespace` — Where the release will be installed
-- `spec.interval` — How often Flux checks that the installed release still matches this HelmRelease, and corrects any drift
-- `spec.chart.spec.chart` — Path to the Helm chart within the Git repository
-- `spec.chart.spec.sourceRef` — Reference to the Git repository source
-- `spec.chart.spec.interval` — How often Flux checks the chart source for a new chart
+- `apiVersion: helm.toolkit.fluxcd.io/v2`: Specifies the Helm Toolkit API version for Flux v2
+- `kind: HelmRelease`: Tells Flux to hand this manifest to the helm-controller
+- `metadata.name`: The name of this Helm release
+- `metadata.namespace`: Where the release will be installed
+- `spec.interval`: How often Flux checks that the installed release still matches this HelmRelease, and corrects any drift
+- `spec.chart.spec.chart`: Path to the Helm chart within the Git repository
+- `spec.chart.spec.sourceRef`: Reference to the Git repository source
+- `spec.chart.spec.interval`: How often Flux checks the chart source for a new chart
 
 ### Two Intervals
 Understanding the difference is crucial:
 
 - **HelmRelease interval** (`spec.interval`): How often Flux checks that the installed release still matches this HelmRelease, and corrects any drift. Edits to the HelmRelease file itself reach the cluster through the flux-system Kustomization, like any other file in the repository.
-- **Chart interval** (`spec.chart.spec.interval`): How often Flux checks the chart source. By default, only a new `version` in `Chart.yaml` produces a new chart — editing a template or `values.yaml` without bumping the version is not picked up. A later lecture shows how to change that with `reconcileStrategy`.
+- **Chart interval** (`spec.chart.spec.interval`): How often Flux checks the chart source. By default, only a new `version` in `Chart.yaml` produces a new chart. Editing a template or `values.yaml` without bumping the version is not picked up. A later lecture shows how to change that with `reconcileStrategy`.
 
 The two intervals govern different things: one keeps the running release in line with its definition, the other watches for a new chart.
 
@@ -150,7 +150,7 @@ kubectl get helmrelease
 kubectl get pods
 ```
 
-`kubectl get helmrelease` then shows `READY` as `True` and a status of `Helm install succeeded for release default/nginx.v1 with chart nginx@0.1.0`. If you run it the instant the reconcile returns, `READY` is `Unknown` and the status reads `Running 'install' action` — that is the install still in progress, not a failure.
+`kubectl get helmrelease` then shows `READY` as `True` and a status of `Helm install succeeded for release default/nginx.v1 with chart nginx@0.1.0`. If you run it the instant the reconcile returns, `READY` is `Unknown` and the status reads `Running 'install' action`. That is the install still in progress, not a failure.
 
 You should also see the Nginx pod running, along with a Service and Ingress in the default namespace.
 
@@ -176,7 +176,7 @@ You should also see the Nginx pod running, along with a Service and Ingress in t
 - Ensure changes are committed and pushed
 
 **Helm chart update not detected?**
-- The chart reconciliation interval is the `spec.chart.spec.interval` you set — 1 minute here
+- The chart reconciliation interval is the `spec.chart.spec.interval` you set: 1 minute here
 - Flux names the generated HelmChart `<helmrelease-namespace>-<helmrelease-name>`, and creates it in the flux-system namespace. For this lesson that is `default-nginx`, so a forced check is `flux reconcile helmchart default-nginx -n flux-system`
 - List them with `flux get helmcharts --all-namespaces` if you are not sure of the name
 
@@ -195,6 +195,6 @@ You should also see the Nginx pod running, along with a Service and Ingress in t
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

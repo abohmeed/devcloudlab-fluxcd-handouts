@@ -1,14 +1,14 @@
 ---
 title: "(Optional) Creating a private Helm repository"
 kicker: "FLUX CD · SECTION 3 · LECTURE 4"
-description: "This lecture covers how to set up ChartMuseum, an open-source Helm chart repository server, to create a private repository that requires authentication. You will deploy"
+description: "This lecture covers how to set up ChartMuseum, an open-source Helm chart repository server, to create a private repository that requires authentication. You will deploy ChartMuseum using Docker, create a test Helm chart, package it, and push it to the repository."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # (Optional) Creating a private Helm repository
 
-*Section 3, Lecture 4 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 4, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -17,7 +17,7 @@ description: "This lecture covers how to set up ChartMuseum, an open-source Helm
 - Stand up ChartMuseum as a self-hosted, authenticated Helm chart repository using Docker
 - Package a Helm chart with `helm package` and push it to a private repository over HTTP basic auth
 - Add an authenticated repository to Helm and search it for a pushed chart
-- Troubleshoot common ChartMuseum failures — permission-denied pushes, missing storage flags, and connection errors
+- Troubleshoot common ChartMuseum failures: permission-denied pushes, missing storage flags, and connection errors
 - Tear down the ChartMuseum container and volume when finished
 
 ## Overview
@@ -69,9 +69,9 @@ The image comes from the project's own GitHub Container Registry. The older
 still ships ChartMuseum 0.12.0, so do not use it.
 
 This command runs ChartMuseum in the background. The key flags are:
-- `-u 0`: run the server as root. Docker creates a brand-new named volume's mount point owned by `root`, and the ChartMuseum image has no `/charts` directory whose ownership it could copy — while the server itself runs as an unprivileged user. Without this flag the chart push below fails with `{"error":"open /charts/busybox-0.1.0.tgz: permission denied"}` and HTTP 500
+- `-u 0`: run the server as root. Docker creates a brand-new named volume's mount point owned by `root`, and the ChartMuseum image has no `/charts` directory whose ownership it could copy, while the server itself runs as an unprivileged user. Without this flag the chart push below fails with `{"error":"open /charts/busybox-0.1.0.tgz: permission denied"}` and HTTP 500
 - `ALLOW_OVERWRITE`: allow replacing existing chart versions (useful for development)
-- `STORAGE` / `STORAGE_LOCAL_ROOTDIR`: REQUIRED — where charts are stored. Without them the container exits with `Missing required flags(s): --storage`
+- `STORAGE` / `STORAGE_LOCAL_ROOTDIR`: REQUIRED. They set where charts are stored. Without them the container exits with `Missing required flags(s): --storage`
 - `BASIC_AUTH_USER` / `BASIC_AUTH_PASS`: enable basic authentication with the credentials `chartuser` / `mypass`. Unauthenticated requests then get a `401`
 
 ## Creating and Pushing a Test Chart
@@ -101,7 +101,7 @@ Edit `templates/deployment.yaml`. In the `spec.template.spec.containers` section
             {{- toYaml .Values.resources | nindent 12 }}
 ```
 
-This changes the image from Nginx to BusyBox and adds a sleep command to keep the container running indefinitely.
+This adds a sleep command to keep the container running indefinitely, because BusyBox has no startup command of its own. The template still reads the image from values; the switch from Nginx to BusyBox happens in `values.yaml`, next.
 
 ### Update values.yaml
 
@@ -154,7 +154,7 @@ my-helm-repo/busybox  0.1.0          1.16.0       A Helm chart for Kubernetes
 ```
 
 The APP VERSION comes from the `appVersion` field that `helm create` wrote into
-`Chart.yaml` — we never changed it. A different Helm version may scaffold a different
+`Chart.yaml`; we never changed it. A different Helm version may scaffold a different
 default there, so do not be surprised if your number differs.
 
 ### Install the chart (example, Helm only)
@@ -262,7 +262,7 @@ image needs no login to pull.
 ```
 
 The `-u 0` flag is missing from `docker run`. Remove the container and start it again
-with the flag in place — the volume can stay:
+with the flag in place (the volume can stay):
 
 ```bash
 docker rm -f my-helm-repo
@@ -327,6 +327,6 @@ With your private ChartMuseum repository running, you are ready to integrate it 
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

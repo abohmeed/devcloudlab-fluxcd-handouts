@@ -1,14 +1,14 @@
 ---
 title: "Automating Helm Release upgrades"
 kicker: "FLUX CD · SECTION 3 · LECTURE 8"
-description: "This lecture explores how Flux CD automates Helm chart upgrades using"
+description: "This lecture explores how Flux CD automates Helm chart upgrades using two mechanisms, revision-based for Git-sourced charts and version-based for Helm-repository charts, and how to pause either of them with suspend."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Automating Helm Release upgrades
 
-*Section 3, Lecture 8 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 8, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -26,7 +26,7 @@ This lecture explores how Flux CD automates Helm chart upgrades using two
 different mechanisms, and how to pause either of them:
 
 1. **Revision-based updates**: for a chart whose source is a **Git repository**,
-   update the Helm release whenever the chart's source files change — no version
+   update the Helm release whenever the chart's source files change, with no version
    bump needed.
 2. **Version-based updates**: for a chart pulled from a **Helm repository**
    (HTTP or OCI), update when a new chart version is published, bounded by a
@@ -37,7 +37,7 @@ checksum annotation, and how to hold a release still with `suspend`.
 
 > **The one rule that decides which mechanism you get.** `reconcileStrategy`
 > applies to Git-sourced charts. `version` applies to Helm-repository-sourced
-> charts — Flux ignores `spec.chart.spec.version` when the source reference is a
+> charts: Flux ignores `spec.chart.spec.version` when the source reference is a
 > `GitRepository` or a `Bucket`. Pick the source first, then the mechanism.
 
 ## Key Concepts
@@ -49,7 +49,7 @@ decides when Flux CD produces a new chart artifact:
 
 - **`ChartVersion`** (the default): a new artifact only when the `version` in
   `Chart.yaml` changes.
-- **`Revision`**: a new artifact whenever the source revision changes — for a
+- **`Revision`**: a new artifact whenever the source revision changes. For a
   GitRepository, that means every commit that touches the chart.
 
 ### Semantic versioning (SemVer)
@@ -65,7 +65,7 @@ In Flux CD, a constraint such as `>=9.0.0 <10.0.0` lets the release take every
 
 ### ConfigMap checksum annotation
 
-Changing a ConfigMap does not restart the pods that mount it — that is
+Changing a ConfigMap does not restart the pods that mount it. That is
 Kubernetes behaviour, not a Flux CD limitation. The usual fix is to make the
 pod template itself change whenever the ConfigMap does:
 
@@ -74,7 +74,7 @@ checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sh
 ```
 
 Put it under `spec.template.metadata.annotations` in the Deployment template,
-**alongside the existing `labels:`**, not in place of them — the Service and the
+**alongside the existing `labels:`**, not in place of them: the Service and the
 Deployment's own selector match on those labels.
 
 ### The suspend parameter
@@ -101,7 +101,7 @@ git add -A
 git commit -m "Your commit message"
 git push --set-upstream origin branch-name
 
-# Merge the branch back into main — Flux only watches the branch it was
+# Merge the branch back into main. Flux only watches the branch it was
 # bootstrapped on, so work that stays on a feature branch never reaches it
 git checkout main
 git merge branch-name
@@ -285,8 +285,8 @@ spec:
       database: "mydatabase"
 ```
 
-With that constraint, Flux resolves the newest chart inside major 9 — at the
-time of recording, 9.23.0. Versions 10.0.0 and later exist in the same registry
+With that constraint, Flux resolves the newest chart inside major 9 (at the
+time of recording, 9.23.0). Versions 10.0.0 and later exist in the same registry
 and are skipped, which is the entire point of the constraint.
 
 ### Apache: a private OCI Helm repository and `suspend`
@@ -336,13 +336,13 @@ helm push apache-0.1.1.tgz oci://registry.gitlab.com/<your-gitlab-username>/myfl
 ```
 
 While `suspend: true` is in place, that new version sits in the registry and
-nothing happens. Change it to `suspend: false` — or remove the field — commit,
+nothing happens. Change it to `suspend: false` (or remove the field), commit,
 and the release moves to 0.1.1 on the next reconciliation.
 
 ## Further reading
 
 - [Flux CD HelmRelease API reference](https://fluxcd.io/flux/components/helm/helmreleases/)
-- [Flux CD HelmChart API reference — where `version` and `reconcileStrategy` apply](https://fluxcd.io/flux/components/source/helmcharts/)
+- [Flux CD HelmChart API reference: where `version` and `reconcileStrategy` apply](https://fluxcd.io/flux/components/source/helmcharts/)
 - [Semantic Versioning specification](https://semver.org/)
 - [Helm chart best practices](https://helm.sh/docs/chart_best_practices/)
 - [Kubernetes ConfigMaps documentation](https://kubernetes.io/docs/concepts/configuration/configmap/)
@@ -356,6 +356,6 @@ and the release moves to 0.1.1 on the next reconciliation.
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

@@ -1,14 +1,14 @@
 ---
 title: "Restructuring the repository to follow the multi-tenancy approach"
 kicker: "FLUX CD · SECTION 4 · LECTURE 5"
-description: "In this lesson, we explored the **multi-tenancy approach** to organizing Flux CD repositories. This pattern separates concerns between cluster administrators and application"
+description: "The multi-tenancy approach to organizing Flux CD repositories: how it separates the admin team from the application teams, and how to rebuild a fresh repository whose shared infrastructure both clusters reconcile."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Restructuring the repository to follow the multi-tenancy approach
 
-*Section 4, Lecture 5 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 4, Lecture 5, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -16,8 +16,8 @@ description: "In this lesson, we explored the **multi-tenancy approach** to orga
 
 - Distinguish the multi-tenancy repository pattern from the mono-repo and repo-per-environment approaches
 - Separate admin-team and application-team responsibilities within one Flux-managed repository
-- Scope a team's Flux Kustomization to its own namespace with `serviceAccountName`
-- Structure infrastructure and application code with Kustomize base/overlay directories per environment
+- Name the tenant boundaries (the `apps` namespace and the `dev` service account) that the next two lectures enforce with `serviceAccountName`
+- Rebuild a fresh repository whose `infrastructure/controllers` directory both clusters reconcile through one `infra-controllers` Kustomization
 - Set indefinite remediation retries on a cluster-wide HelmRelease so a failed first install keeps retrying
 
 ## Overview
@@ -60,89 +60,83 @@ In this lesson, we explored the **multi-tenancy approach** to organizing Flux CD
 
 ## Core Patterns
 
-### Kustomization with Service Accounts
+### The admin team's infrastructure Kustomization
 
-Each application team's Kustomization resource is bound to a service account scoped to their namespace:
-
-```yaml
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: dev-team-apps
-  namespace: flux-system
-spec:
-  serviceAccountName: dev-team-sa
-  path: ./apps/dev-team
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  interval: 10m0s
-```
-
-The service account limits what resources Flux can create — only those in the team's namespace.
-
-### Namespace Isolation
-
-Each team gets one or more dedicated namespaces:
-
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: dev-team-ns
-```
-
-Flux reconciles the team's Kustomizations only in their assigned namespace.
-
-### Staging and Production Overlays
-
-Each team maintains separate overlays for different environments:
-
-```
-infrastructure/
-├── base/
-│   ├── ingress-controller.yaml
-│   └── certificate-manager.yaml
-└── overlays/
-    ├── staging/
-    │   └── kustomization.yaml
-    └── production/
-        └── kustomization.yaml
-```
-
-Each overlay points to the same base but applies different patches for environment-specific configuration.
-
-### Cluster-Wide Flux Configuration
-
-The admin team's Kustomization bootstraps cluster components and onboards teams:
+This lecture builds one Flux Kustomization, `infra-controllers`, and adds it to each cluster's directory. Both point at the same `infrastructure/controllers` folder:
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: infrastructure
+  name: infra-controllers
   namespace: flux-system
 spec:
-  path: ./infrastructure/overlays/staging
+  interval: 1h
+  retryInterval: 5m
+  timeout: 5m
   sourceRef:
     kind: GitRepository
     name: flux-system
-  interval: 10m0s
+  path: ./infrastructure/controllers
+  prune: true
+  wait: true
 ```
+
+Save it as `clusters/staging/infrastructure.yaml` and again, unchanged, as `clusters/production/infrastructure.yaml`.
+
+### Where the tenant boundaries come from (next two lectures)
+
+This lecture sets no service account and creates no tenant namespace yet. The next two lectures onboard the dev team, and they use these names:
+
+- the tenant namespace is `apps`;
+- the tenant's service account is `dev`, in the `apps` namespace;
+- the tenant's Flux Kustomization is also named `dev`, lives in `apps`, and sets `serviceAccountName: dev`.
+
+```yaml
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: dev
+  namespace: apps
+spec:
+  interval: 1m0s
+  path: ./
+  prune: false
+  serviceAccountName: dev
+  sourceRef:
+    kind: GitRepository
+    name: dev
+```
+
+Because Flux reconciles this Kustomization as the `dev` service account, and that account is only bound to a role inside `apps`, the dev team's manifests can only create resources in the `apps` namespace.
 
 ## Essential Commands
 
 ### Bootstrap Flux on a Cluster
 
+Export your GitLab personal access token once in your shell (it needs the `api` scope), then bootstrap the staging cluster:
+
 ```bash
+export GITLAB_TOKEN=<your-personal-access-token>
+
+kubectl config use-context kind-staging
 flux bootstrap gitlab \
-  --owner <your-username> \
-  --repository <repo-name> \
-  --path clusters/staging \
+  --owner=<your-gitlab-username> \
+  --repository=myfluxrepo-2026 \
+  --branch=main \
+  --path=clusters/staging \
+  --token-auth \
   --personal
 ```
 
-This command installs Flux controllers, creates the flux-system namespace, and sets up GitRepository and Kustomization resources.
+This command installs Flux controllers, creates the flux-system namespace, and sets up GitRepository and Kustomization resources. `--token-auth` makes Flux authenticate to GitLab with the token instead of a deploy key.
+
+Repeat it for production: switch to `kind-production` and change the path to `clusters/production`. Then pull what Flux committed into your local copy:
+
+```bash
+git pull origin main
+git branch --set-upstream-to=origin/main main
+```
 
 ### View Flux Reconciliation Status
 
@@ -156,10 +150,10 @@ Lists all Flux resources (GitRepositories, HelmRepositories, Kustomizations, Hel
 
 ```bash
 flux reconcile source git flux-system
-flux reconcile kustomization infrastructure --namespace flux-system
+flux reconcile kustomization infra-controllers --namespace flux-system
 ```
 
-Forces Flux to immediately apply changes from Git, rather than waiting for the next interval.
+Forces Flux to immediately apply changes from Git, rather than waiting for the next interval. Run it on both clusters, switching the kubectl context between them.
 
 ### Check HelmRelease Status
 
@@ -179,7 +173,7 @@ spec:
       retries: -1
 ```
 
-By default, if the very first install of a Helm release fails — the chart cannot be pulled, or something it needs in the cluster is not up yet — the Helm controller gives up and leaves the release in a failed state until somebody intervenes. `retries: -1` tells it to keep retrying indefinitely instead, which is what you want for a cluster-wide component the rest of the platform depends on.
+By default, if the very first install of a Helm release fails (the chart cannot be pulled, or something it needs in the cluster is not up yet), the Helm controller gives up and leaves the release in a failed state until somebody intervenes. `retries: -1` tells it to keep retrying indefinitely instead, which is what you want for a cluster-wide component the rest of the platform depends on.
 
 ### View Cluster Directory Structure
 
@@ -187,7 +181,7 @@ By default, if the very first install of a Helm release fails — the chart cann
 tree .
 ```
 
-Shows the Git repository structure that Flux created, including the `clusters/` and `infrastructure/` directories. If `tree` is not on your machine, install it with your package manager — on Ubuntu, `sudo apt install tree`.
+Shows the Git repository structure that Flux created, including the `clusters/` and `infrastructure/` directories. If `tree` is not on your machine, install it with your package manager (on Ubuntu, `sudo apt install tree`).
 
 ## What the Lecture Builds
 
@@ -208,50 +202,37 @@ myfluxrepo-2026/
         └── flux-operator-dashboard.yaml    # HelmRepository + HelmRelease for the dashboard
 ```
 
-There is no `kustomization.yaml` inside `infrastructure/controllers`. When a Flux Kustomization's `path` has none, Flux generates one covering every manifest in that directory — which is why the two files above are applied without you listing them anywhere.
+There is no `kustomization.yaml` inside `infrastructure/controllers`. When a Flux Kustomization's `path` has none, Flux generates one covering every manifest in that directory, which is why the two files above are applied without you listing them anywhere.
 
 The `HelmRepository` and the `HelmRelease` live in the same file on purpose: the release names the repository in its `sourceRef`, and the Kustomization sets `prune: true`, so a release whose repository is not in Git ends up with no chart source.
 
-## Complete Example: Multi-Tenant Repository Structure
+## Illustrative: Where the Infrastructure Can Grow
 
-This is the shape you grow into once staging and production stop being identical — a Kustomize base with per-environment overlays. It is what ships in the lesson's downloadable `lab/` folder, and it is deliberately fuller than what the lecture types.
+This is an illustration, not something to build in this lecture. Once staging and production stop needing identical infrastructure, the usual next step is a Kustomize base with per-environment overlays:
 
 ```
 myfluxrepo-2026/
 ├── clusters/
 │   ├── staging/
-│   │   └── kustomization.yaml          # Points to infrastructure/overlays/staging
+│   │   └── infrastructure.yaml          # Flux Kustomization → ./infrastructure/overlays/staging
 │   └── production/
-│       └── kustomization.yaml          # Points to infrastructure/overlays/production
-├── infrastructure/
-│   ├── base/
-│   │   ├── ingress-controller.yaml
-│   │   ├── certificate-manager.yaml
-│   │   └── kustomization.yaml
-│   ├── controllers/
-│   │   ├── flux-operator-dashboard.yaml  # HelmRepository + dashboard HelmRelease
-│   │   └── kustomization.yaml
-│   └── overlays/
-│       ├── staging/
-│       │   └── kustomization.yaml      # Staging-specific patches
-│       └── production/
-│           └── kustomization.yaml      # Production-specific patches
-├── apps/
-│   ├── dev-team/
-│   │   ├── base/
-│   │   │   └── deployment.yaml
-│   │   └── overlays/
-│   │       ├── staging/
-│   │       │   └── kustomization.yaml
-│   │       └── production/
-│   │           └── kustomization.yaml
-│   └── ops-team/
-│       ├── base/
-│       └── overlays/
-│           ├── staging/
-│           └── production/
-└── README.md
+│       └── infrastructure.yaml          # Flux Kustomization → ./infrastructure/overlays/production
+└── infrastructure/
+    ├── base/
+    │   ├── ingress-controller.yaml
+    │   ├── certificate-manager.yaml
+    │   └── kustomization.yaml
+    ├── controllers/
+    │   ├── flux-operator-dashboard.yaml  # HelmRepository + dashboard HelmRelease
+    │   └── kustomization.yaml
+    └── overlays/
+        ├── staging/
+        │   └── kustomization.yaml      # Staging-specific patches
+        └── production/
+            └── kustomization.yaml      # Production-specific patches
 ```
+
+The lecture's single `infra-controllers` Kustomization pointing at `./infrastructure/controllers` is all the next two lectures need. Tenants are added in a separate `tenants/` directory, which the next lecture creates.
 
 ## API Versions (Flux v2.9.4)
 
@@ -274,7 +255,7 @@ Ensure all manifests use these versions. Older versions (v2beta1, v1beta2) were 
 
 **Issue**: Dashboard pod crashes or doesn't start
 
-**Solution**: Check the chart source first — `kubectl get helmrepository -n flux-system` must list the repository the release names in its `sourceRef`. If that is fine, add `install.remediation.retries: -1` to the HelmRelease spec so a failed first install keeps retrying instead of staying failed.
+**Solution**: Check the chart source first: `kubectl get helmrepository -n flux-system` must list the repository the release names in its `sourceRef`. If that is fine, add `install.remediation.retries: -1` to the HelmRelease spec so a failed first install keeps retrying instead of staying failed.
 
 **Issue**: Git push requires credentials every time
 
@@ -302,6 +283,6 @@ Ensure all manifests use these versions. Older versions (v2beta1, v1beta2) were 
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

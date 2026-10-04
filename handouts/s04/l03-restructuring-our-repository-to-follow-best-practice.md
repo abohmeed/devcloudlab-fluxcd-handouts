@@ -1,14 +1,14 @@
 ---
 title: "Restructuring our repository to follow best practices"
 kicker: "FLUX CD · SECTION 4 · LECTURE 3"
-description: "This lecture covers how to restructure a Git repository using the monorepo pattern to manage multiple environments (staging and production) with Flux CD. The key concepts"
+description: "This lecture covers how to restructure a Git repository using the monorepo pattern to manage multiple environments (staging and production) with Flux CD. It organizes applications into a base with staging and production overlays, adds a shared infrastructure directory, and bootstraps one cluster per environment from the same repository."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Restructuring our repository to follow best practices
 
-*Section 4, Lecture 3 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 4, Lecture 3, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -33,7 +33,7 @@ This lecture covers how to restructure a Git repository using the monorepo patte
 
 Every command below that names a Git account uses the placeholder
 `<your-gitlab-username>`. Replace it with your own GitLab username, and
-`<your-repo>` with the name of your own repository — these commands push to **your**
+`<your-repo>` with the name of your own repository. These commands push to **your**
 personal repository, not to anyone else's.
 
 ## Where we start
@@ -100,16 +100,16 @@ The convention is the same for every application: `release.yaml` for the Helm re
 `kustomization.yaml` that lists them.
 
 ```bash
-# Apache — the Helm release, then the repository and its secret combined into one file
+# Apache: the Helm release, then the repository and its secret combined into one file
 git mv clusters/my-cluster/apache-helm-release.yaml apps/base/apache/release.yaml
 cat clusters/my-cluster/gitlab-oci-repository.yaml clusters/my-cluster/gitlab-oci-secret.yaml > apps/base/apache/repository.yaml
 git rm -q clusters/my-cluster/gitlab-oci-repository.yaml clusters/my-cluster/gitlab-oci-secret.yaml
 
-# MySQL — the Bitnami OCI repository
+# MySQL: the Bitnami OCI repository
 git mv clusters/my-cluster/mysql-release.yaml apps/base/mysql/release.yaml
 git mv clusters/my-cluster/bitnami-oci.yaml apps/base/mysql/repository.yaml
 
-# BusyBox — the local HTTP repository
+# BusyBox: the local HTTP repository
 git mv clusters/my-cluster/busybox-helm-release.yaml apps/base/busybox/release.yaml
 git mv clusters/my-cluster/localhttprepo.yaml apps/base/busybox/repository.yaml
 ```
@@ -138,7 +138,8 @@ git mv cluster-info.yaml production-info.yaml
 cp production-info.yaml staging-info.yaml
 
 # staging moves off the standard ports so both clusters can run on one machine
-sed -i 's/hostPort: 80$/hostPort: 8888/; s/hostPort: 443$/hostPort: 8443/' staging-info.yaml
+# -i.bak works with both GNU sed (Linux) and BSD sed (macOS); the backup is removed right after
+sed -i.bak 's/hostPort: 80$/hostPort: 8888/; s/hostPort: 443$/hostPort: 8443/' staging-info.yaml && rm staging-info.yaml.bak
 ```
 
 ### 5. Remove the old cluster's directory, commit and push
@@ -209,7 +210,7 @@ kubectl get ingress --all-namespaces
 
 ## Final YAML Manifests
 
-### Application: Apache — `apps/base/apache/kustomization.yaml`
+### Application: Apache: `apps/base/apache/kustomization.yaml`
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -220,7 +221,7 @@ resources:
   - release.yaml
 ```
 
-### Application: Apache — `apps/base/apache/release.yaml`
+### Application: Apache: `apps/base/apache/release.yaml`
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -241,11 +242,11 @@ spec:
     replicaCount: 1
 ```
 
-### Application: Apache — `apps/base/apache/repository.yaml`
+### Application: Apache: `apps/base/apache/repository.yaml`
 
 The two documents that were `gitlab-oci-repository.yaml` and `gitlab-oci-secret.yaml`,
 now in one file. `.dockerconfigjson` is a base64-encoded Docker config holding your
-registry username and token — base64 is not encryption, so this file belongs only in a
+registry username and token. Base64 is not encryption, so this file belongs only in a
 private repository.
 
 ```yaml
@@ -272,7 +273,7 @@ data:
   .dockerconfigjson: <base64 of {"auths":{"registry.gitlab.com":{"auth":"<base64 of user:token>"}}}>
 ```
 
-### Application: MySQL — `apps/base/mysql/kustomization.yaml`
+### Application: MySQL: `apps/base/mysql/kustomization.yaml`
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -283,7 +284,7 @@ resources:
   - release.yaml
 ```
 
-### Application: MySQL — `apps/base/mysql/repository.yaml`
+### Application: MySQL: `apps/base/mysql/repository.yaml`
 
 ```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -297,7 +298,7 @@ spec:
   url: oci://registry-1.docker.io/bitnamicharts
 ```
 
-### Application: MySQL — `apps/base/mysql/release.yaml`
+### Application: MySQL: `apps/base/mysql/release.yaml`
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -328,7 +329,7 @@ spec:
       rootPassword: "rootpass"
 ```
 
-### Application: BusyBox — `apps/base/busybox/kustomization.yaml`
+### Application: BusyBox: `apps/base/busybox/kustomization.yaml`
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -339,7 +340,7 @@ resources:
   - release.yaml
 ```
 
-### Application: BusyBox — `apps/base/busybox/repository.yaml`
+### Application: BusyBox: `apps/base/busybox/repository.yaml`
 
 ```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -352,7 +353,7 @@ spec:
   url: http://chartrepo:8080
 ```
 
-### Application: BusyBox — `apps/base/busybox/release.yaml`
+### Application: BusyBox: `apps/base/busybox/release.yaml`
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -371,7 +372,7 @@ spec:
         name: generic
 ```
 
-### Staging Environment — `apps/staging/kustomization.yaml`
+### Staging Environment: `apps/staging/kustomization.yaml`
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -387,7 +388,7 @@ The overlay references each application's **directory**, not `apps/base` itself:
 Kustomize follows a `resources` entry into a directory only if that directory has a
 `kustomization.yaml`, and `apps/base` has none.
 
-### Production Environment — `apps/production/kustomization.yaml`
+### Production Environment: `apps/production/kustomization.yaml`
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -399,7 +400,7 @@ resources:
   - ../base/mysql
 ```
 
-### Infrastructure — `infrastructure/controllers/kustomization.yaml`
+### Infrastructure: `infrastructure/controllers/kustomization.yaml`
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -409,7 +410,7 @@ resources:
   - flux-operator-dashboard.yaml
 ```
 
-### Infrastructure — `infrastructure/controllers/nginx-ingress-controller.yaml`
+### Infrastructure: `infrastructure/controllers/nginx-ingress-controller.yaml`
 
 The ingress controller, installed by Flux into every cluster that points at this
 directory. The values are the ones a KinD cluster needs: the controller binds the node's
@@ -472,7 +473,7 @@ spec:
         publish-status-address: localhost
 ```
 
-### Infrastructure — `infrastructure/controllers/flux-operator-dashboard.yaml`
+### Infrastructure: `infrastructure/controllers/flux-operator-dashboard.yaml`
 
 The Flux CD web UI from the previous section, deployed as a web server only so it never
 takes over the bootstrap.
@@ -518,7 +519,7 @@ spec:
                 pathType: Prefix
 ```
 
-### Staging Applications — `clusters/staging/apps.yaml`
+### Staging Applications: `clusters/staging/apps.yaml`
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -537,7 +538,7 @@ spec:
   timeout: 5m0s
 ```
 
-### Staging Infrastructure — `clusters/staging/infrastructure.yaml`
+### Staging Infrastructure: `clusters/staging/infrastructure.yaml`
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -557,7 +558,7 @@ spec:
   wait: true
 ```
 
-### Production Applications — `clusters/production/apps.yaml`
+### Production Applications: `clusters/production/apps.yaml`
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -576,7 +577,7 @@ spec:
   timeout: 5m0s
 ```
 
-### Production Infrastructure — `clusters/production/infrastructure.yaml`
+### Production Infrastructure: `clusters/production/infrastructure.yaml`
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -596,7 +597,7 @@ spec:
   wait: true
 ```
 
-### Staging Cluster Configuration — `staging-info.yaml`
+### Staging Cluster Configuration: `staging-info.yaml`
 
 ```yaml
 kind: Cluster
@@ -618,7 +619,7 @@ nodes:
     protocol: TCP
 ```
 
-### Production Cluster Configuration — `production-info.yaml`
+### Production Cluster Configuration: `production-info.yaml`
 
 ```yaml
 kind: Cluster
@@ -712,6 +713,6 @@ The Flux dashboard is served by name rather than on the root path, so add
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

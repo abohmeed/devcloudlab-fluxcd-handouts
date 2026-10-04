@@ -8,7 +8,7 @@ description: "Generate an Age key pair, encrypt a Kubernetes Secret with SOPS, a
 
 # Secrets encryption with Age
 
-*Section 5, Lecture 5 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 5, Lecture 5, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -29,10 +29,10 @@ Both are supported by SOPS and both work with Flux the same way at the Kustomiza
 | Key generation | One command, sane defaults | Interactive prompts, several parameters to choose |
 | Key format | A single small text file holding both keys | A keyring; keys are usually exported/imported separately |
 | Cryptography | X25519 (modern elliptic-curve) | Typically RSA (older, larger keys) |
-| Key size | Short — a few dozen characters | Long — an RSA 4096 key is unwieldy to handle |
+| Key size | Short: a few dozen characters | Long: an RSA 4096 key is unwieldy to handle |
 | Tooling | Written in Go, minimal dependencies | Mature but heavier, historically prone to configuration footguns |
 
-A shorter key is not a weaker one. Age's X25519 keys are shorter than an RSA 4096 key because elliptic-curve cryptography reaches equivalent security with far less key material — the two are not comparable byte-for-byte. Age is generally recommended over GPG for new SOPS setups because of its simplicity, not because GPG is insecure.
+A shorter key is not a weaker one. Age's X25519 keys are shorter than an RSA 4096 key because elliptic-curve cryptography reaches equivalent security with far less key material, so the two are not comparable byte-for-byte. Age is generally recommended over GPG for new SOPS setups because of its simplicity, not because GPG is insecure.
 
 ## Generate an Age key pair
 
@@ -43,7 +43,7 @@ brew install age
 age-keygen -o age.agekey
 ```
 
-`age-keygen` writes both the private and public key into `age.agekey` — there is no separate export step. Open the file and you will see the public key on a comment line and the private key on the line below it:
+`age-keygen` writes both the private and public key into `age.agekey`. There is no separate export step. Open the file and you will see the public key on a comment line and the private key on the line below it:
 
 ```bash
 cat age.agekey
@@ -68,7 +68,7 @@ cat age.agekey | kubectl create secret generic sops-age \
 ```
 
 > **Note:** The key inside the Secret **must** be named `age.agekey`. Flux detects
-> which decryption method to use — Age or GPG — by looking at the file extension
+> which decryption method to use (Age or GPG) by looking at the file extension
 > of the key inside the Secret, not by any field you set explicitly. A key ending
 > in `.agekey` is treated as an Age key; a key ending in `.asc` is treated as a
 > GPG key.
@@ -86,11 +86,11 @@ creation_rules:
     age: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
 ```
 
-`encrypted_regex` restricts encryption to the `data` and `stringData` fields only — SOPS and Flux both leave the rest of the manifest (`apiVersion`, `kind`, `metadata`, and so on) in plain text, so the encrypted file stays readable and diffable in Git while the actual secret values stay opaque.
+`encrypted_regex` restricts encryption to the `data` and `stringData` fields only. SOPS and Flux both leave the rest of the manifest (`apiVersion`, `kind`, `metadata`, and so on) in plain text, so the encrypted file stays readable and diffable in Git while the actual secret values stay opaque.
 
 ## Create the Secret manifest
 
-Write the Kubernetes Secret you want to encrypt as a plain YAML file:
+Write the Kubernetes Secret you want to encrypt as a plain YAML file. Replace `<your-rapidapi-key>` with your own RapidAPI key for the weather API. Never copy a key from a handout or a video, and never commit the file before it is encrypted:
 
 ```yaml
 apiVersion: v1
@@ -100,10 +100,10 @@ metadata:
   namespace: apps
 stringData:
   values.yaml: |
-    apikey: ecbc396f46mshb65cbb1f82cf334p1fcc87jsna5e962a3c542
+    apikey: <your-rapidapi-key>
 ```
 
-Two details matter here. First, this Secret is nested under a `values.yaml` key because that is the default key a Flux `HelmRelease` looks for when it pulls chart values from a Secret or ConfigMap — it can be changed, but leaving it at the default keeps things simple. Second, use `stringData`, not `data`. A plain Kubernetes Secret stores `data` values as base64, but SOPS/Flux decryption does not re-encode a value that is already base64 — so if you base64-encode the value yourself under `data`, Flux applies SOPS's own re-encoding on top of it and the application receives a double-encoded, unusable value. `stringData` takes plain text and lets Kubernetes handle the encoding exactly once.
+Two details matter here. First, this Secret is nested under a `values.yaml` key because that is the default key a Flux `HelmRelease` looks for when it pulls chart values from a Secret or ConfigMap. It can be changed, but leaving it at the default keeps things simple. Second, use `stringData`, not `data`. A plain Kubernetes Secret stores `data` values as base64, but SOPS/Flux decryption does not re-encode a value that is already base64, so if you base64-encode the value yourself under `data`, Flux applies SOPS's own re-encoding on top of it and the application receives a double-encoded, unusable value. `stringData` takes plain text and lets Kubernetes handle the encoding exactly once.
 
 ## Encrypt with sops --encrypt --age
 
@@ -122,7 +122,7 @@ sops --age=age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p \
   --in-place api-key.yaml
 ```
 
-`--in-place` rewrites the file itself rather than creating a new one. Open it afterward and only the values under `stringData` are ciphertext — everything else in the manifest is still readable YAML, safe to commit to Git.
+`--in-place` rewrites the file itself rather than creating a new one. Open it afterward and only the values under `stringData` are ciphertext; everything else in the manifest is still readable YAML, safe to commit to Git.
 
 ## Wire the encrypted Secret into a Helm release
 
@@ -136,7 +136,7 @@ spec:
       name: api-key
 ```
 
-When Flux's Helm controller reconciles this release, it reads the decrypted `api-key` Secret and merges its `values.yaml` content into the chart values — the manifest itself never carries the raw key.
+When Flux's Helm controller reconciles this release, it reads the decrypted `api-key` Secret and merges its `values.yaml` content into the chart values. The manifest itself never carries the raw key.
 
 ## Tell Flux how to decrypt: Kustomization spec.decryption
 
@@ -147,7 +147,7 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: dev
-  namespace: flux-system
+  namespace: apps
 spec:
   decryption:
     provider: sops
@@ -155,11 +155,11 @@ spec:
       name: sops-age
 ```
 
-This is the same shape used for GPG decryption — only the Secret name changes. The `provider` is always `sops`; Flux inspects the referenced Secret's key name at decrypt time to decide whether to use its Age or GPG code path.
+This Kustomization is the dev tenant's `dev` Kustomization in `tenants/base/dev/sync.yaml`, which lives in the `apps` namespace. Flux looks up `decryption.secretRef` in the Kustomization's own namespace, which is why the `sops-age` Secret was created in `apps`. This is the same shape used for GPG decryption: only the Secret name changes. The `provider` is always `sops`; Flux inspects the referenced Secret's key name at decrypt time to decide whether to use its Age or GPG code path.
 
 ## Reconcile and confirm
 
-Commit and push both repositories — the one holding the Kustomization change and the one holding the encrypted Secret and Helm release — then reconcile in dependency order:
+Commit and push both repositories (the one holding the Kustomization change and the one holding the encrypted Secret and Helm release), then reconcile in dependency order:
 
 ```bash
 flux reconcile kustomization flux-system --with-source
@@ -174,15 +174,15 @@ kubectl get secrets -n apps
 kubectl get secret api-key -n apps -o jsonpath='{.data.values\.yaml}' | base64 -d
 ```
 
-The decoded output is the original plain-text value — proof that Flux decrypted the Secret and that it was not double-encoded along the way.
+The decoded output is the original plain-text value: proof that Flux decrypted the Secret and that it was not double-encoded along the way.
 
 ## Further reading
 
 - [Age (GitHub)](https://github.com/FiloSottile/age)
 - [Mozilla SOPS (GitHub)](https://github.com/getsops/sops)
-- [Flux — Manage Kubernetes secrets with Mozilla SOPS](https://fluxcd.io/flux/guides/mozilla-sops/)
-- [Flux — Kustomization API reference](https://fluxcd.io/flux/components/kustomize/kustomizations/)
-- [Flux — HelmRelease API reference (valuesFrom)](https://fluxcd.io/flux/components/helm/helmreleases/)
+- [Flux: Manage Kubernetes secrets with Mozilla SOPS](https://fluxcd.io/flux/guides/mozilla-sops/)
+- [Flux: Kustomization API reference](https://fluxcd.io/flux/components/kustomize/kustomizations/)
+- [Flux: HelmRelease API reference (valuesFrom)](https://fluxcd.io/flux/components/helm/helmreleases/)
 
 ---
 
@@ -192,6 +192,6 @@ The decoded output is the original plain-text value — proof that Flux decrypte
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

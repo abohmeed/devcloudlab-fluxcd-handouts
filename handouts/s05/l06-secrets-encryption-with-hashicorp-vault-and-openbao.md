@@ -1,14 +1,14 @@
 ---
 title: "Secrets encryption with HashiCorp Vault (and OpenBao)"
 kicker: "FLUX CD · SECTION 5 · LECTURE 6"
-description: "This lecture demonstrates how to securely encrypt Kubernetes secrets in a Git repository using HashiCorp Vault's Transit Secret Engine as an encryption backend for Mozilla"
+description: "How to securely encrypt Kubernetes secrets in a Git repository using HashiCorp Vault's Transit Secret Engine as an encryption backend for Mozilla SOPS, and how OpenBao fits in as the open-source alternative."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Secrets encryption with HashiCorp Vault (and OpenBao)
 
-*Section 5, Lecture 6 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 5, Lecture 6, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -66,9 +66,9 @@ docker run --cap-add=IPC_LOCK -d -e VAULT_DEV_ROOT_TOKEN_ID="$VAULT_TOKEN" -p 82
 - `-e VAULT_DEV_ROOT_TOKEN_ID`: Sets the root token for authentication. Never hard-code a token into a command you save, share or commit.
 - `-p 8200:8200`: Publishes Vault's API on port 8200 of the host.
 
-### Configure the Vault address — the one detail that catches everybody
+### Configure the Vault address: the one detail that catches everybody
 
-SOPS writes the Vault address it encrypted with **into the encrypted file**. Later it is Flux, running inside your cluster, that reads that address back and calls Vault to decrypt. Inside a pod, `127.0.0.1` is the pod itself — so a Secret encrypted against `http://127.0.0.1:8200` fails every reconcile with `dial tcp 127.0.0.1:8200: connect: connection refused`.
+SOPS writes the Vault address it encrypted with **into the encrypted file**. Later it is Flux, running inside your cluster, that reads that address back and calls Vault to decrypt. Inside a pod, `127.0.0.1` is the pod itself, so a Secret encrypted against `http://127.0.0.1:8200` fails every reconcile with `dial tcp 127.0.0.1:8200: connect: connection refused`.
 
 Use an address your cluster can reach. On a local KinD cluster, that is the gateway of the `kind` Docker network:
 
@@ -77,7 +77,7 @@ export VAULT_ADDR="http://$(docker network inspect kind -f '{{range .IPAM.Config
 echo $VAULT_ADDR
 ```
 
-That normally prints `http://172.18.0.1:8200`. On a managed cluster, use the DNS name or load-balancer address of your Vault instance instead. The address is not a secret — only the token is.
+That normally prints `http://172.18.0.1:8200`. On a managed cluster, use the DNS name or load-balancer address of your Vault instance instead. The address is not a secret; only the token is.
 
 ### Verify Vault Health
 
@@ -85,7 +85,7 @@ That normally prints `http://172.18.0.1:8200`. On a managed cluster, use the DNS
 curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request GET $VAULT_ADDR/v1/sys/health
 ```
 
-Expected response: one line of JSON showing Vault's status — look for
+Expected response: one line of JSON showing Vault's status. Look for
 `"initialized":true` and `"sealed":false`. (`-s` keeps curl from painting its transfer
 progress meter over the response.)
 
@@ -106,7 +106,7 @@ curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request POST $VAULT_ADDR/v1/tra
 
 This one does answer: a JSON description of the new key, carrying
 `"name":"my-encryption-key"` and `"type":"aes256-gcm96"`. There is no key material in
-it — that stays inside Vault. From here on, `my-encryption-key` is the only thing you
+it: that stays inside Vault. From here on, `my-encryption-key` is the only thing you
 ever hand to SOPS.
 
 ### Create the Auth Secret
@@ -172,7 +172,7 @@ sops --hc-vault-transit $VAULT_ADDR/v1/transit/keys/my-encryption-key --encrypt 
 
 ### Add Secrets to the Release Manifest
 
-Both files are encrypted now, so they are safe to commit. Copy them — **as they are after encryption**, `ENC[...]` blobs and `sops:` blocks included — into `kustomize/base/release.yaml`, each as its own YAML document separated by `---`:
+Both files are encrypted now, so they are safe to commit. Copy them (**as they are after encryption**, `ENC[...]` blobs and `sops:` blocks included) into `kustomize/base/release.yaml`, each as its own YAML document separated by `---`:
 
 ```yaml
 ---
@@ -205,7 +205,7 @@ sops:
   # ... the rest of the SOPS metadata
 ```
 
-If an earlier lecture left an Age-encrypted version of the same `api-key` Secret in this file, delete that whole document while you are here. Once the Kustomization stops referencing the Age key, that document can no longer be decrypted and the entire reconciliation fails — not just that one Secret.
+If an earlier lecture left an Age-encrypted version of the same `api-key` Secret in this file, delete that whole document while you are here. Once the Kustomization stops referencing the Age key, that document can no longer be decrypted and the entire reconciliation fails, not just that one Secret.
 
 Remove the temporary plaintext-then-encrypted working files:
 
@@ -229,7 +229,7 @@ spec:
       name: auth
 ```
 
-Note the apiVersion: `helm.toolkit.fluxcd.io/v2`. The v2 API went GA in Flux 2.3.0, and the old `v2beta1` was removed entirely in Flux 2.7.0 — on any current Flux, `v2beta1` manifests simply fail to apply.
+Note the apiVersion: `helm.toolkit.fluxcd.io/v2`. The v2 API went GA in Flux 2.3.0, and the old `v2beta1` was removed entirely in Flux 2.7.0. On any current Flux, `v2beta1` manifests simply fail to apply.
 
 ### Configure Flux CD for Vault Decryption
 
@@ -239,7 +239,7 @@ Create a Kubernetes secret containing the Vault token:
 echo $VAULT_TOKEN | kubectl create secret generic sops-hcvault --namespace=apps --from-file=sops.vault-token=/dev/stdin
 ```
 
-The key name `sops.vault-token` is what tells Flux CD this is a HashiCorp Vault credential rather than an Age or GPG key. Create it in the **same namespace as the Kustomization that will use it** — Flux resolves `decryption.secretRef` in the Kustomization's own namespace, not in `flux-system`.
+The key name `sops.vault-token` is what tells Flux CD this is a HashiCorp Vault credential rather than an Age or GPG key. Create it in the **same namespace as the Kustomization that will use it**: Flux resolves `decryption.secretRef` in the Kustomization's own namespace, not in `flux-system`.
 
 **One Secret, several backends.** A Kustomization decrypts through the one Secret its `secretRef` names, but that Secret can carry keys for several backends at the same time. `identity.agekey`, `identity.asc`, `sops.aws-kms`, `sops.azure-kv`, `sops.gcp-kms` and `sops.vault-token` are all recognised keys, and Flux's own documentation shows an Age identity and a Vault token side by side in a single Secret. So switching a repository to Vault does not force you to re-encrypt everything: you can add `sops.vault-token` to the Secret you already have. In this lecture we re-encrypt the API-token Secret anyway, to keep the whole repository on one backend.
 
@@ -313,11 +313,11 @@ The output should show the unencrypted MySQL credentials.
 
 | Command | Purpose |
 |---------|---------|
-| `docker run --cap-add=IPC_LOCK -d -p 8200:8200 hashicorp/vault:latest` | Start a Vault container |
+| `docker run --cap-add=IPC_LOCK -d -e VAULT_DEV_ROOT_TOKEN_ID="$VAULT_TOKEN" -p 8200:8200 hashicorp/vault:latest` | Start a Vault container |
 | `curl -s -H "X-Vault-Token: $VAULT_TOKEN" $VAULT_ADDR/v1/sys/health` | Check Vault health |
 | `curl -s -H "X-Vault-Token: $VAULT_TOKEN" -X POST $VAULT_ADDR/v1/transit/keys/<key-name>` | Create a Transit encryption key |
-| `sops --hc-vault-transit $VAULT_ADDR/v1/transit/keys/<key-name> --encrypt --in-place <file>` | Encrypt a file with Vault |
-| `kubectl create secret generic sops-hcvault --from-file=sops.vault-token=/dev/stdin` | Store Vault token in Kubernetes |
+| <code>sops --hc-vault-transit $VAULT_ADDR/v1/transit/keys/&lt;key-name&gt; --encrypt --encrypted-regex '^(data&#124;stringData)$' --in-place &lt;file&gt;</code> | Encrypt a file with Vault |
+| <code>echo $VAULT_TOKEN &#124; kubectl create secret generic sops-hcvault --namespace=apps --from-file=sops.vault-token=/dev/stdin</code> | Store Vault token in Kubernetes |
 | `flux reconcile kustomization <name> --namespace=<ns> --with-source` | Trigger Flux reconciliation, fetching the latest commit first |
 
 ---
@@ -360,7 +360,7 @@ The exact encrypted values and metadata will vary based on your Vault instance a
 - [HashiCorp Vault Official Documentation](https://www.vaultproject.io/docs)
 - [OpenBao Project on Linux Foundation](https://openbao.org/)
 - [Flux CD Secrets Management](https://fluxcd.io/docs/security/)
-- [Mozilla SOPS Documentation](https://github.com/mozilla/sops)
+- [SOPS on GitHub](https://github.com/getsops/sops)
 - [Good Practices for Kubernetes Secrets](https://kubernetes.io/docs/concepts/security/secrets-good-practices/)
 
 ---
@@ -371,6 +371,6 @@ The exact encrypted values and metadata will vary based on your Vault instance a
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

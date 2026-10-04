@@ -8,14 +8,14 @@ description: "How SOPS integrates with GPG, AWS KMS, Azure Key Vault and Google 
 
 # Flux CD's Kustomization integration with Mozilla SOPS
 
-*Section 5, Lecture 3 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 5, Lecture 3, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
 ## What you'll learn
 
 - What SOPS is, and why it exists alongside Sealed Secrets rather than replacing it
-- How SOPS fits into an existing key management system — GPG, AWS KMS, Azure Key Vault, or Google Cloud KMS
+- How SOPS fits into an existing key management system: GPG, AWS KMS, Azure Key Vault, or Google Cloud KMS
 - The shape of the `.sops.yaml` config file and a working `sops --encrypt` command
 - How the Flux Kustomization `spec.decryption` field is structured, and how Flux finds the right decryption key
 - What changed in the SOPS project and the Flux API since this video was recorded
@@ -26,20 +26,20 @@ The previous lecture covered **Sealed Secrets**: a self-contained scheme where t
 
 | | Sealed Secrets | SOPS |
 |---|---|---|
-| Key storage | Private key inside the cluster | External — GPG, AWS KMS, Azure Key Vault, GCP KMS, or HashiCorp Vault |
+| Key storage | Private key inside the cluster | External: GPG, AWS KMS, Azure Key Vault, GCP KMS, or HashiCorp Vault |
 | Best fit | Self-contained clusters, no existing KMS | Organizations with an existing key management system |
-| Encryption scope | Whole Secret object | Configurable — typically just `data` / `stringData` |
+| Encryption scope | Whole Secret object | Configurable, typically just `data` / `stringData` |
 
 ## What is SOPS
 
-**SOPS** (Secrets OPerationS) is an open-source tool for encrypting, decrypting, and editing files that contain sensitive data. Instead of a bespoke workflow, SOPS lets you work with an encrypted file almost as if it were plaintext — it decrypts on open, re-encrypts on save, and can also decrypt a file for a script or CI job to read.
+**SOPS** (Secrets OPerationS) is an open-source tool for encrypting, decrypting, and editing files that contain sensitive data. Instead of a bespoke workflow, SOPS lets you work with an encrypted file almost as if it were plaintext: it decrypts on open, re-encrypts on save, and can also decrypt a file for a script or CI job to read.
 
-SOPS doesn't hold its own keys. It integrates with existing key management systems and encrypts each file's data with a data key, then encrypts that data key with one or more master keys from whichever backend you configure — GPG, AWS KMS, Azure Key Vault, or Google Cloud KMS.
+SOPS doesn't hold its own keys. It integrates with existing key management systems and encrypts each file's data with a data key, then encrypts that data key with one or more master keys from whichever backend you configure: GPG, AWS KMS, Azure Key Vault, or Google Cloud KMS.
 
 > **Since this video was recorded:** SOPS is no longer a Mozilla project. It moved to
 > the Cloud Native Computing Foundation and now lives at
 > [github.com/getsops/sops](https://github.com/getsops/sops) rather than under the
-> `mozilla` GitHub organization. The tool and its file formats are unchanged — only the
+> `mozilla` GitHub organization. The tool and its file formats are unchanged; only the
 > home has moved. This lecture keeps the title "Mozilla SOPS" because that's the name
 > used in the video.
 
@@ -66,7 +66,7 @@ gcp_kms: projects/<project>/locations/global/keyRings/<ring>/cryptoKeys/<key>  #
 
 ## Encrypting a secret
 
-With `.sops.yaml` in place, encrypting a file is a single command — SOPS reads the matching rule and picks the key backend for you:
+With `.sops.yaml` in place, encrypting a file is a single command. SOPS reads the matching rule and picks the key backend for you:
 
 ```bash
 sops --encrypt --in-place secret.yaml
@@ -96,14 +96,14 @@ spec:
       name: sops-keys
 ```
 
-Two fields are required: `provider`, which today only accepts `sops`, and `secretRef.name`, the Kubernetes Secret that holds the decryption keys. `sops-keys` above is just an example name — call it whatever you like, as long as `secretRef.name` matches.
+Two fields are required: `provider`, which today only accepts `sops`, and `secretRef.name`, the Kubernetes Secret that holds the decryption keys. `sops-keys` above is just an example name, so call it whatever you like, as long as `secretRef.name` matches.
 
 > **Since this video was recorded:** the `Kustomization` API used in this example is
-> `kustomize.toolkit.fluxcd.io/v1`. Flux has since removed `v1beta2`, which is what
-> older material — including this video — may show. If you're following along on a
-> current Flux install, use `v1` as written above.
+> `kustomize.toolkit.fluxcd.io/v1`. The older `v1beta2`, which this video may show, has been
+> superseded by `v1` and is deprecated. If you are following along on a current Flux
+> install, use `v1` as written above.
 
-One detail worth remembering: `decryption` only works against SOPS-encrypted *values* inside a manifest, not against a manifest that is entirely ciphertext. That's exactly what the `encrypted_regex` in `.sops.yaml` controls — encrypt the whole file and Flux has nothing readable to parse as YAML; encrypt just `data`/`stringData` and it works.
+One detail worth remembering: `decryption` only works against SOPS-encrypted *values* inside a manifest, not against a manifest that is entirely ciphertext. That's exactly what the `encrypted_regex` in `.sops.yaml` controls: encrypt the whole file and Flux has nothing readable to parse as YAML; encrypt just `data`/`stringData` and it works.
 
 ## The decryption Secret: how Flux tells keys apart
 
@@ -112,6 +112,8 @@ The Secret named in `secretRef` holds one or more decryption keys, and Flux (thr
 | Key backend | Field name suffix | Example |
 |---|---|---|
 | GPG | `.asc` | `identity.asc` |
+| Age | `.agekey` | `age.agekey` |
+| HashiCorp Vault | `sops.vault-token` | `sops.vault-token` |
 | AWS KMS | `sops.aws-kms` | `sops.aws-kms` |
 | Azure Key Vault | `sops.azure-kv` | `sops.azure-kv` |
 | GCP KMS | `sops.gcp-kms` | `sops.gcp-kms` |
@@ -124,20 +126,20 @@ kubectl create secret generic sops-keys \
   --from-file=identity.asc=./private.asc
 ```
 
-For AWS, Azure, or GCP, that Secret typically holds cloud credentials rather than a private key, and it's only needed when you're not using the cluster's own identity — a pod running under **IRSA** on EKS, or an equivalent workload identity on AKS/GKE, can authenticate to KMS without any static credential in the Secret at all. That IRSA path is covered in a later lecture.
+For AWS, Azure, or GCP, that Secret typically holds cloud credentials rather than a private key, and it's only needed when you're not using the cluster's own identity. A pod running under **IRSA** on EKS, or an equivalent workload identity on AKS/GKE, can authenticate to KMS without any static credential in the Secret at all.
 
 ## Where HashiCorp Vault fits
 
-Vault isn't a SOPS backend in the same sense as GPG or a cloud KMS — SOPS doesn't talk to Vault directly. Organizations that standardize on Vault typically use it to generate and manage the GPG or KMS keys that SOPS does understand, so Vault sits one layer above this integration rather than inside it.
+SOPS supports Vault's Transit engine directly, through `sops --hc-vault-transit`. Flux authenticates to Vault with a `sops.vault-token` key in the decryption Secret; see the Vault and OpenBao lecture later in this section.
 
 ## What's next
 
-Sealed Secrets and SOPS solve the same problem from different directions — pick whichever matches the key management your organization already has. The coming lectures build on this `decryption` field with hands-on setups for specific backends, including using AWS KMS through IRSA.
+Sealed Secrets and SOPS solve the same problem from different directions, so pick whichever matches the key management your organization already has. The coming lectures build on this `decryption` field with hands-on setups for specific backends: GPG, Age, and HashiCorp Vault (with OpenBao).
 
 ## Further reading
 
 - [SOPS on GitHub](https://github.com/getsops/sops)
-- [Flux Kustomization API — decryption](https://fluxcd.io/flux/components/kustomize/kustomizations/#decryption)
+- [Flux Kustomization API: decryption](https://fluxcd.io/flux/components/kustomize/kustomizations/#decryption)
 - [Flux guide: manage Kubernetes secrets with SOPS](https://fluxcd.io/flux/guides/mozilla-sops/)
 
 ---
@@ -148,6 +150,6 @@ Sealed Secrets and SOPS solve the same problem from different directions — pic
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

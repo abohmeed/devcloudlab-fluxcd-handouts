@@ -1,14 +1,14 @@
 ---
 title: "Using ECR as a Helm repository with EKS and Flux CD"
 kicker: "FLUX CD · SECTION 3 · LECTURE 7"
-description: "This lecture demonstrates how to deploy Flux CD on Amazon EKS and use AWS Elastic Container Registry (ECR) as a private Helm repository. We use IAM Roles for Service Accounts"
+description: "This lecture demonstrates how to deploy Flux CD on Amazon EKS and use AWS Elastic Container Registry (ECR) as a private Helm repository. We use IAM Roles for Service Accounts (IRSA) to let Flux CD's source controller authenticate to ECR without storing credentials in Git."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Using ECR as a Helm repository with EKS and Flux CD
 
-*Section 3, Lecture 7 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 7, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -98,7 +98,7 @@ flux bootstrap gitlab \
 --token-auth \
 --personal
 ```
-Installs Flux CD on the EKS cluster and configures it to manage manifests from a Git repository. Replace `<your-gitlab-username>` and `<your-repository-name>` with your own GitLab username and repository, and export your GitLab personal access token as `GITLAB_TOKEN` first — `--token-auth` reads it from the environment.
+Installs Flux CD on the EKS cluster and configures it to manage manifests from a Git repository. Replace `<your-gitlab-username>` and `<your-repository-name>` with your own GitLab username and repository, and export your GitLab personal access token as `GITLAB_TOKEN` first, because `--token-auth` reads it from the environment.
 
 ### Package Helm Chart
 ```bash
@@ -266,7 +266,7 @@ This forces Flux to check the Git repository and apply any changes immediately, 
 
 ---
 
-## Clean Up — do this as soon as you are finished
+## Clean Up: do this as soon as you are finished
 
 An EKS cluster keeps billing until you delete it: roughly $0.10/hour for the control
 plane plus the cost of the node. Nothing in this lecture deletes it for you.
@@ -296,7 +296,7 @@ aws iam get-role --role-name FluxCDECR   # should report NoSuchEntity
 
 ## Next Steps
 
-- **Pod Identity Alternative**: For new EKS clusters, consider using EKS Pod Identity instead of IRSA. It provides the same functionality without requiring an OIDC provider and is simpler to configure.
+- **Pod Identity Alternative**: EKS Pod Identity is now the recommended approach for new workloads. It provides the same functionality without requiring an OIDC provider and is simpler to configure. IRSA remains fully supported, with no deprecation announced, which is why this lecture uses it.
 - **Private Git Repository**: Use a private Git repository for your Flux configuration to reduce the risk of accidental credential exposure.
 - **Helm Values**: Explore using HelmRelease `valuesFrom` to manage Helm values from ConfigMaps or Secrets.
 - **Multi-cluster**: Extend this setup to multiple EKS clusters, each with their own Flux bootstrap and service accounts.
@@ -305,7 +305,7 @@ aws iam get-role --role-name FluxCDECR   # should report NoSuchEntity
 
 ## Further Reading
 
-- **Flux CD — Migrate to the Helm Controller**: https://fluxcd.io/flux/migration/helm-operator-migration/
+- **Flux CD: Migrate to the Helm Controller**: https://fluxcd.io/flux/migration/helm-operator-migration/
 - **AWS EKS and Helm**: https://docs.aws.amazon.com/eks/latest/userguide/helm.html
 - **IRSA Setup**: https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
 - **ECR as Helm Repository**: https://docs.aws.amazon.com/AmazonECR/latest/userguide/Amazon_ECR_OCI_helm_repositories.html
@@ -320,6 +320,6 @@ aws iam get-role --role-name FluxCDECR   # should report NoSuchEntity
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

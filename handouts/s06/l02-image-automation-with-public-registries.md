@@ -8,7 +8,7 @@ description: "Build a complete Flux CD image automation pipeline against a publi
 
 # Image automation with public registries
 
-*Section 6, Lecture 2 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 6, Lecture 2, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -22,17 +22,17 @@ description: "Build a complete Flux CD image automation pipeline against a publi
 
 ## Overview
 
-Flux's image automation watches a container registry, decides which tag is "latest" according to a policy you define, and pushes that decision into your Deployment manifest as a Git commit — no `kubectl set image`, and no one editing YAML by hand. Three resources do the work:
+Flux's image automation watches a container registry, decides which tag is "latest" according to a policy you define, and pushes that decision into your Deployment manifest as a Git commit, with no `kubectl set image` and no one editing YAML by hand. Three resources do the work:
 
 1. **ImageRepository** scans the registry and records which tags exist.
 2. **ImagePolicy** filters those tags down to the one that matches your rule.
 3. **ImageUpdateAutomation** rewrites the marked image line in Git and pushes the commit.
 
-This lecture builds all three against a **public** registry — GitHub Container Registry, in this case — so there is no authentication to configure. The [next lecture](l03-image-automation-with-private-registries.md) adds the Secret and `secretRef` a private registry needs; everything else carries over unchanged.
+This lecture builds all three against a **public** registry (GitHub Container Registry, in this case), so there is no authentication to configure. The [next lecture](l03-image-automation-with-private-registries.md) adds the Secret and `secretRef` a private registry needs; everything else carries over unchanged.
 
 ## Enable the Two Extra Controllers
 
-The image-reflector-controller and image-automation-controller are **not** part of a default `flux bootstrap`. Skip this step and every command below fails silently or reports resources that never become ready — nothing in this lecture works without it.
+The image-reflector-controller and image-automation-controller are **not** part of a default `flux bootstrap`. Skip this step and every command below fails silently or reports resources that never become ready. Nothing in this lecture works without it.
 
 Bootstrapping also needs to know your Git token has **write** access, since the automation pushes commits. If your cluster was bootstrapped without `--read-write-key`, delete the Secret Flux stores its token in so bootstrap recreates it correctly:
 
@@ -40,7 +40,7 @@ Bootstrapping also needs to know your Git token has **write** access, since the 
 kubectl delete secret flux-system -n flux-system
 ```
 
-`flux bootstrap` is idempotent — running it again against a cluster that is already bootstrapped does not break anything, it simply reconciles to the same desired state, now including the extra components:
+`flux bootstrap` is idempotent: running it again against a cluster that is already bootstrapped does not break anything, it simply reconciles to the same desired state, now including the extra components:
 
 ```bash
 flux bootstrap github \
@@ -68,7 +68,7 @@ You should see an `image-reflector-controller-...` pod and an `image-automation-
 
 ## Deploy the Application You'll Automate
 
-This lecture automates [podinfo](https://github.com/stefanprodan/podinfo), pulled from `ghcr.io/stefanprodan/podinfo` — GitHub's public container registry, no credentials required. Add a Deployment for it under your tenant path (here, `tenants/base/dev/sync.yaml`), pinned to an old tag on purpose:
+This lecture automates [podinfo](https://github.com/stefanprodan/podinfo), pulled from `ghcr.io/stefanprodan/podinfo` (GitHub's public container registry, no credentials required). Add a Deployment for it under your tenant path (here, `tenants/base/dev/sync.yaml`), pinned to an old tag on purpose:
 
 ```yaml
 # tenants/base/dev/sync.yaml
@@ -109,7 +109,7 @@ flux reconcile kustomization tenants --with-source
 flux reconcile kustomization dev --with-source
 ```
 
-Confirm the pod is running and note the current image tag — you'll compare it after automation runs:
+Confirm the pod is running and note the current image tag. You'll compare it after automation runs:
 
 ```bash
 kubectl get pods -n apps | grep podinfo
@@ -138,7 +138,7 @@ spec:
   interval: 5m
 ```
 
-No `secretRef` — the registry is public, so the image-reflector-controller needs no credentials to list its tags. Commit the file to a path your Flux Kustomization reconciles, then reconcile:
+No `secretRef`: the registry is public, so the image-reflector-controller needs no credentials to list its tags. Commit the file to a path your Flux Kustomization reconciles, then reconcile:
 
 ```bash
 git add podinfo-registry.yaml
@@ -159,7 +159,7 @@ A `Ready=True` status with a tag count means Flux successfully connected to `ghc
 
 ## Create an ImagePolicy
 
-An **ImageRepository** only lists tags — it does not decide which one is "latest." That's the job of an **ImagePolicy**. Suppose your application isn't ready for podinfo's next major version: you want Flux to track the newest tag from `5.0.0` up to, but excluding, `6.0.0`.
+An **ImageRepository** only lists tags. It does not decide which one is "latest." That's the job of an **ImagePolicy**. Suppose your application isn't ready for podinfo's next major version: you want Flux to track the newest tag from `5.0.0` up to, but excluding, `6.0.0`.
 
 ```bash
 flux create image policy podinfo \
@@ -182,7 +182,7 @@ spec:
       range: '>=5.0.0 <6.0.0'
 ```
 
-`imageRepositoryRef` links the policy to the ImageRepository you already created — the policy filters that repository's tag list, it doesn't scan the registry itself. Commit and reconcile:
+`imageRepositoryRef` links the policy to the ImageRepository you already created. The policy filters that repository's tag list, it doesn't scan the registry itself. Commit and reconcile:
 
 ```bash
 git add podinfo-policy.yaml
@@ -196,7 +196,7 @@ flux reconcile kustomization flux-system --with-source
 flux get image policy podinfo
 ```
 
-The output shows the tag the policy resolved to. If podinfo's registry has moved past `6.0.0`, the policy still reports the highest `5.x.x` release — the constraint is doing exactly what it's for.
+The output shows the tag the policy resolved to. If podinfo's registry has moved past `6.0.0`, the policy still reports the highest `5.x.x` release. The constraint is doing exactly what it's for.
 
 ## Mark the Deployment for Automatic Updates
 
@@ -206,7 +206,7 @@ Flux now knows which tag is "latest" according to your policy, but it doesn't ye
 image: ghcr.io/stefanprodan/podinfo:5.0.0 # {"$imagepolicy": "flux-system:podinfo"}
 ```
 
-The marker format is `{"$imagepolicy": "namespace:policy-name"}` — it must be a YAML comment (the leading `#`), since the Kubernetes API doesn't understand this string and would reject it as a real field. `flux-system:podinfo` names the namespace and the ImagePolicy you created above.
+The marker format is `{"$imagepolicy": "namespace:policy-name"}`. It must be a YAML comment (the leading `#`), since the Kubernetes API doesn't understand this string and would reject it as a real field. `flux-system:podinfo` names the namespace and the ImagePolicy you created above.
 
 Edit `tenants/base/dev/sync.yaml` to add the marker, then commit:
 
@@ -234,8 +234,9 @@ flux create image update flux-system \
 ```
 
 > **Since this video was recorded:** the video's commit template uses
-> `{{range .Updated.Images}}{{println .}}{{end}}`. Flux 2.9 removed the `.Updated` field —
-> an automation built with it is created but sits at `Ready=False` with
+> `{{range .Updated.Images}}{{println .}}{{end}}`. The `.Updated` field was deprecated in
+> image-automation-controller v0.38.0 and removed in v1.0.0 (the `v1` API, shipped in Flux 2.7).
+> An automation that uses it is marked Stalled with the message
 > `template uses removed '.Updated' field. Please use '.Changed' instead.` The command
 > above uses the current `.Changed.Changes` field, where each entry carries `.OldValue`,
 > `.NewValue` and `.Setter`.
@@ -267,7 +268,7 @@ spec:
     strategy: Setters
 ```
 
-`git-repo-path` (`update.path` in the YAML) is the directory Flux scans for marker comments — it must contain the manifest you just edited. `author-name` is deliberately not your own username: a distinct identity like `fluxcdbot` makes it obvious in `git log` which commits were made by a human and which were made by the automation.
+`git-repo-path` (`update.path` in the YAML) is the directory Flux scans for marker comments. It must contain the manifest you just edited. `author-name` is deliberately not your own username: a distinct identity like `fluxcdbot` makes it obvious in `git log` which commits were made by a human and which were made by the automation.
 
 Commit and reconcile:
 
@@ -294,7 +295,7 @@ You should see a new commit authored by `fluxcdbot`. Confirm the manifest itself
 cat tenants/base/dev/sync.yaml
 ```
 
-The image tag should now be the highest `5.x.x` release the ImagePolicy resolved — no longer `5.0.0`. That commit is in Git, not yet in the cluster; bring it down immediately instead of waiting for the Kustomization's own interval:
+The image tag should now be the highest `5.x.x` release the ImagePolicy resolved, no longer `5.0.0`. That commit is in Git, not yet in the cluster; bring it down immediately instead of waiting for the Kustomization's own interval:
 
 ```bash
 flux reconcile kustomization flux-system --with-source
@@ -306,7 +307,7 @@ Check the running Deployment:
 kubectl get deployment/podinfo -n apps -o yaml | grep 'image:'
 ```
 
-From here, the loop runs on its own. Whenever a new tag lands in `ghcr.io/stefanprodan/podinfo` that fits the policy's semver range, the image-reflector-controller finds it on its next scan, the ImagePolicy resolves it as the new latest, the ImageUpdateAutomation commits the change, and the existing Flux/Kustomization reconciliation applies it — all as ordinary GitOps commits, with no one ever hand-editing a tag or running the `latest` label as a stand-in for version tracking.
+From here, the loop runs on its own. Whenever a new tag lands in `ghcr.io/stefanprodan/podinfo` that fits the policy's semver range, the image-reflector-controller finds it on its next scan, the ImagePolicy resolves it as the new latest, the ImageUpdateAutomation commits the change, and the existing Flux/Kustomization reconciliation applies it. All of it happens as ordinary GitOps commits, with no one ever hand-editing a tag or using the `latest` label as a stand-in for version tracking.
 
 ## Further reading
 
@@ -325,6 +326,6 @@ From here, the loop runs on its own. Whenever a new tag lands in `ghcr.io/stefan
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

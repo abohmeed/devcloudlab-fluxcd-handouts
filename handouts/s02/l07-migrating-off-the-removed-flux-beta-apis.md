@@ -1,14 +1,14 @@
 ---
 title: "Migrating off the removed Flux beta APIs"
 kicker: "FLUX CD · SECTION 2 · LECTURE 7"
-description: "If you've built Flux manifests using this course, they work fine on the Flux versions that shipped in 2024. But if you point those same Git repositories at a recent Flux"
+description: "If you've built Flux manifests using this course, they work fine on the Flux versions that shipped in 2024. But if you point those same Git repositories at a recent Flux cluster (v2.7.0 or later), reconciliation stops. This lecture shows how to migrate to the stable APIs."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Migrating off the removed Flux beta APIs
 
-*Section 2, Lecture 7 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 7, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -17,16 +17,16 @@ description: "If you've built Flux manifests using this course, they work fine o
 - Identify which Flux beta APIs were removed in v2.7.0 and their stable replacements
 - Migrate Git repository manifests to the new API versions using `flux migrate -f .`
 - Migrate cluster-stored custom resources to the new API versions using `flux migrate`
-- Sequence a Flux upgrade correctly — repository first, then cluster, then Flux itself
+- Sequence a Flux upgrade correctly: repository first, then cluster, then Flux itself
 - Diagnose the silent-failure symptoms of removed API versions in `flux get kustomizations` and kubectl output
 
 ## Why This Matters
 
 If you've built Flux manifests using this course, they work fine on the Flux versions that shipped in 2024. But if you point those same Git repositories at a recent Flux cluster (v2.7.0 or later, released September 2025), your reconciliation stops.
 
-The problem is not a crash — it's silent failure. The namespace where your application should land remains empty. No errors appear in pod logs because no pods were created. The cluster is simply telling you it doesn't understand the API versions your manifests are asking for.
+The problem is not a crash. It's silent failure. The namespace where your application should land remains empty. No errors appear in pod logs because no pods were created. The cluster is simply telling you it doesn't understand the API versions your manifests are asking for.
 
-This is not a bug. It's a consequence of how Kubernetes API versioning works. When Flux first released version 2, most APIs were still in beta — a promise that the design was nearly final but might still change. Over time, those APIs graduated to stable versions. When stable APIs were released, the beta ones were eventually removed entirely.
+This is not a bug. It's a consequence of how Kubernetes API versioning works. When Flux first released version 2, most APIs were still in beta: a promise that the design was nearly final but might still change. Over time, those APIs graduated to stable versions. When stable APIs were released, the beta ones were eventually removed entirely.
 
 ## When It Happened
 
@@ -42,7 +42,7 @@ These three groups changed. Your `Kustomization` objects on `kustomize.toolkit.f
 
 Every manifest you wrote in this course uses one of the APIs listed below. You need to update each one to its new version.
 
-| Kind | Old API | New API | When it moved |
+| Kind | Old API | New API | Beta removed in |
 |---|---|---|---|
 | HelmRelease | `helm.toolkit.fluxcd.io/v2beta1` | `helm.toolkit.fluxcd.io/v2` | Flux v2.7.0 (Sept 2025) |
 | HelmRepository | `source.toolkit.fluxcd.io/v1beta2` | `source.toolkit.fluxcd.io/v1` | Flux v2.7.0 (Sept 2025) |
@@ -52,7 +52,7 @@ Every manifest you wrote in this course uses one of the APIs listed below. You n
 | Alert | `notification.toolkit.fluxcd.io/v1beta2` | `notification.toolkit.fluxcd.io/v1beta3` | Flux v2.7.0 (Sept 2025) |
 | Provider | `notification.toolkit.fluxcd.io/v1beta2` | `notification.toolkit.fluxcd.io/v1beta3` | Flux v2.7.0 (Sept 2025) |
 | Receiver | `notification.toolkit.fluxcd.io/v1beta2` | `notification.toolkit.fluxcd.io/v1` | Flux v2.7.0 (Sept 2025) |
-| Kustomization | `kustomize.toolkit.fluxcd.io/v1` | No change — already stable | Not applicable |
+| Kustomization | `kustomize.toolkit.fluxcd.io/v1` | No change: already stable | Not applicable |
 
 ## The Good News: It's (Almost) Just an apiVersion Change
 
@@ -162,7 +162,7 @@ flux get kustomizations
 flux get helmreleases -A
 ```
 
-All Kustomizations should show `Applied revision` and HelmReleases should show their installed revision.
+All Kustomizations should show `Applied revision`, and every HelmRelease should show `READY` as `True` with the message `Release reconciled`.
 
 ### Command Reference
 
@@ -179,10 +179,10 @@ All Kustomizations should show `Applied revision` and HelmReleases should show t
 
 The order you do this matters:
 
-1. **Migrate your Git repository first** — update and commit the manifests
-2. **Push the changes** — make sure your cluster can pull the new versions
-3. **Migrate cluster objects** — update what's already stored in etcd
-4. **Upgrade Flux** — if you're upgrading to a newer version
+1. **Migrate your Git repository first:** update and commit the manifests
+2. **Push the changes:** make sure your cluster can pull the new versions
+3. **Migrate cluster objects:** update what's already stored in etcd
+4. **Upgrade Flux:** if you're upgrading to a newer version
 
 The reason is critical: if you upgrade Flux to a version that has removed these APIs while your repository still contains them, Flux will be unable to read your own manifests, and you'll be debugging under pressure.
 
@@ -192,7 +192,7 @@ Do not reverse this order.
 
 If reconciliation stops, you'll see one of two error messages.
 
-**From Flux itself** — if you run `flux get kustomizations`:
+**From Flux itself**, if you run `flux get kustomizations`:
 
 ```
 HelmRepository/default/podinfo dry-run failed: no matches for kind "HelmRepository" in version "source.toolkit.fluxcd.io/v1beta2"
@@ -200,18 +200,18 @@ HelmRepository/default/podinfo dry-run failed: no matches for kind "HelmReposito
 
 This clearly tells you the cluster doesn't recognize that API version. It's the right message to read first.
 
-**From kubectl** — if you try applying a manifest manually:
+**From kubectl**, if you try applying a manifest manually:
 
 ```
-error: resource mapping not found for kind "HelmRelease" in version "helm.toolkit.fluxcd.io/v2beta1"
+error: resource mapping not found for name: "podinfo" namespace: "podinfo" on "helm.toolkit.fluxcd.io/v2beta1": no matches for kind "HelmRelease" in version "helm.toolkit.fluxcd.io/v2beta1"
 ensure CRDs are installed first
 ```
 
-That last line — "ensure CRDs are installed first" — is misleading. The CRDs ARE installed. They're just installed at newer versions than the one your manifest is asking for. Read the error above it, not below it. The cluster is telling you it has never heard of that API version.
+That last line, "ensure CRDs are installed first", is misleading. The CRDs ARE installed. They're just installed at newer versions than the one your manifest is asking for. Read the error above it, not below it. The cluster is telling you it has never heard of that API version.
 
 ## One More Thing
 
-The lectures that follow this one still show manifests written with the older beta API versions. That's because they were recorded before the migration happened. Everything you learn from them about how Flux works — how sources reconcile, how Helm releases deploy, how Kustomize overlays work — is completely correct and hasn't changed.
+The lectures that follow this one still show manifests written with the older beta API versions. That's because they were recorded before the migration happened. Everything you learn from them about how Flux works (how sources reconcile, how Helm releases deploy, how Kustomize overlays work) is completely correct and hasn't changed.
 
 When you build along with those lectures, either:
 
@@ -222,10 +222,10 @@ The teaching is identical either way.
 
 ## Further Reading
 
-- [Flux CD Migration Guide](https://fluxcd.io/flux/migration/) — official migration documentation
-- [Flux CD API Versions](https://fluxcd.io/flux/components/) — see current stable versions for all resources
-- [Kubernetes API Versioning](https://kubernetes.io/docs/reference/using-api/api-overview/#api-versioning) — deeper explanation of how API deprecation works
-- [Flux Release Notes v2.7.0](https://github.com/fluxcd/flux2/releases/tag/v2.7.0) — what changed in the version that removed these APIs
+- [Flux CD Migration Guide](https://fluxcd.io/flux/migration/): official migration documentation
+- [Flux CD API Versions](https://fluxcd.io/flux/components/): see current stable versions for all resources
+- [Kubernetes API Versioning](https://kubernetes.io/docs/reference/using-api/api-overview/#api-versioning): deeper explanation of how API deprecation works
+- [Flux Release Notes v2.7.0](https://github.com/fluxcd/flux2/releases/tag/v2.7.0): what changed in the version that removed these APIs
 
 ---
 
@@ -235,6 +235,6 @@ The teaching is identical either way.
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

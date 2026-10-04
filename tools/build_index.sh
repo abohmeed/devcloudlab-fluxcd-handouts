@@ -1,7 +1,7 @@
 #!/bin/bash
 # Regenerates README.md (what GitHub shows) and index.md (what Pages shows)
 # from the handouts actually present on disk. Run it after adding or renaming
-# a handout — the index is derived, never hand-edited.
+# a handout. The index is derived, never hand-edited.
 set -euo pipefail
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$repo"
@@ -26,7 +26,7 @@ title_of() {
 
 emit_body() {
   for sec in $(find handouts -mindepth 1 -maxdepth 1 -type d | sed 's|handouts/||' | sort); do
-    printf '\n## Section %s — %s\n\n' "$((10#${sec#s}))" "$(sec_title "$sec")"
+    printf '\n## Section %s: %s\n\n' "$((10#${sec#s}))" "$(sec_title "$sec")"
     for f in $(find "handouts/$sec" -name '*.md' | sort); do
       les=$(basename "$f" | sed -n 's/^l\([0-9][0-9]\)-.*/\1/p')
       printf -- '- **%s.** [%s](%s)\n' "$((10#$les))" "$(title_of "$f")" "$f"
@@ -42,12 +42,12 @@ n=$(find handouts -name '*.md' | wc -l | tr -d ' ')
   <a href="https://devcloudlab.com"><img src="assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="130"></a>
 </p>
 
-<h1 align="center">Flux CD — Course Handouts</h1>
+<h1 align="center">Flux CD: Course Handouts</h1>
 
 <p align="center">
   The written companions to the <strong>Flux CD</strong> course by
   <a href="https://devcloudlab.com"><strong>DevCloudLab</strong></a>.<br>
-  One handout per lecture: the concepts, the commands, the manifests — all copyable.
+  One handout per lecture: the concepts, the commands, the manifests, all copyable.
 </p>
 
 <p align="center">
@@ -81,7 +81,7 @@ HEAD
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>
 FOOT
@@ -90,9 +90,9 @@ FOOT
 # The Pages index reuses the same body under the site layout.
 {
   printf -- '---\n'
-  printf 'title: "Flux CD — Course Handouts"\n'
+  printf 'title: "Flux CD: Course Handouts"\n'
   printf 'kicker: "DEVCLOUDLAB · COURSE HANDOUTS"\n'
-  printf 'description: "The written companions to the Flux CD course by DevCloudLab — one handout per lecture."\n'
+  printf 'description: "The written companions to the Flux CD course by DevCloudLab: one handout per lecture."\n'
   printf -- '---\n\n'
   sed -n '/^<p align="center">/,$p' README.md | sed 's|(handouts/\(.*\)\.md)|(handouts/\1.html)|'
 } > index.md

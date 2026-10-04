@@ -8,7 +8,7 @@ description: "How Flux CD turns manifests, Helm releases and Kustomize overlays 
 
 # Implementing declarative infrastructure with Flux CD
 
-*Section 2, Lecture 6 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 6, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -17,7 +17,7 @@ description: "How Flux CD turns manifests, Helm releases and Kustomize overlays 
 - The difference between declarative and imperative infrastructure, and why Flux CD is built entirely around the declarative model
 - How Flux's controllers continuously reconcile your cluster's actual state with the desired state stored in Git
 - What bootstrapping does to a cluster and why it is the first step of any Flux setup
-- How to declare infrastructure three ways — plain Kubernetes manifests, Helm releases, and Kustomize overlays
+- How to declare infrastructure three ways: plain Kubernetes manifests, Helm releases, and Kustomize overlays
 - What Image Automation does and why it removes a class of manual manifest edits
 
 ## Declarative vs. imperative
@@ -32,13 +32,13 @@ In an **imperative** model, you tell the system exactly what to do, step by step
 | Drift | Nothing corrects it automatically | Detected and reconciled automatically |
 | Source of truth | Whatever command ran last | The Git repository |
 
-Flux CD is a **declarative** tool: you never tell it what to do. You tell it what you want, and its controllers figure out how to get there — and how to stay there.
+Flux CD is a **declarative** tool: you never tell it what to do. You tell it what you want, and its controllers figure out how to get there, and how to stay there.
 
 ## How Flux reconciles state
 
 Flux's controllers run a continuous reconciliation loop: they watch the live state of your cluster and compare it against the state defined in your Git repository. When the two disagree, a controller acts to close the gap.
 
-For example, say a `Deployment` manifest in Git specifies three replicas, but the running Pod count drops to two — a node was rescheduled, someone ran a manual `kubectl scale`, whatever the cause. Flux's **Source Controller** notices the Git state hasn't changed, but the **Kustomize Controller** notices the live cluster has drifted from it, and reapplies the manifest, bringing the replica count back to three. You never told Flux to "fix the replica count" — you told it, once, what the count should be, and it enforces that continuously.
+For example, say a `Deployment` manifest in Git specifies three replicas, but the running Pod count drops to two (a node was rescheduled, someone ran a manual `kubectl scale`, whatever the cause). Flux's **Source Controller** notices the Git state hasn't changed, but the **Kustomize Controller** notices the live cluster has drifted from it, and reapplies the manifest, bringing the replica count back to three. You never told Flux to "fix the replica count". You told it, once, what the count should be, and it enforces that continuously.
 
 ## Bootstrapping Flux
 
@@ -53,38 +53,48 @@ flux bootstrap github \
   --personal
 ```
 
-Bootstrapping installs Flux's CRDs and controllers into the cluster, then commits the resulting configuration into the target repository and path. From that point on, anything you commit under that path is a candidate for Flux to apply — the repository becomes the cluster's desired state.
+Bootstrapping installs Flux's CRDs and controllers into the cluster, then commits the resulting configuration into the target repository and path. From that point on, anything you commit under that path is a candidate for Flux to apply: the repository becomes the cluster's desired state.
 
 ## Declaring infrastructure
 
 Once Flux is bootstrapped, you describe your infrastructure in Git using one of three approaches, and Flux keeps the cluster in sync with whichever you choose.
 
-**Plain Kubernetes manifests.** For something like an NGINX deployment, you write an ordinary `Deployment` manifest and commit it. Flux's Source Controller detects the new commit; the Kustomize Controller applies the manifest. Change the image tag or the replica count in Git later, and Flux updates the live deployment to match — no `kubectl apply` from your side.
+**Plain Kubernetes manifests.** For something like an NGINX deployment, you write an ordinary `Deployment` manifest and commit it. Flux's Source Controller detects the new commit; the Kustomize Controller applies the manifest. Change the image tag or the replica count in Git later, and Flux updates the live deployment to match, with no `kubectl apply` from your side.
 
-**Helm releases**, managed through the `HelmRelease` custom resource:
+**Helm releases**, managed through the `HelmRelease` custom resource. A `HelmRelease` installs a chart from a source you also declare, here a `HelmRepository` for the podinfo chart:
 
 ```yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: podinfo
+  namespace: flux-system
+spec:
+  interval: 10m
+  url: https://stefanprodan.github.io/podinfo
+---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: nginx
+  name: podinfo
   namespace: default
 spec:
   interval: 5m
   chart:
     spec:
-      chart: nginx
-      version: "15.x"
+      chart: podinfo
+      version: "6.x"
       sourceRef:
         kind: HelmRepository
-        name: bitnami
+        name: podinfo
+        namespace: flux-system
   values:
     replicaCount: 3
 ```
 
 Change a value or bump a chart version in this manifest, commit it, and the Helm Controller upgrades the release to match.
 
-**Kustomize overlays**, for managing variations of the same manifests across environments. You keep a base configuration and layer environment-specific overlays — development, staging, production — on top of it:
+**Kustomize overlays**, for managing variations of the same manifests across environments. You keep a base configuration and layer environment-specific overlays (development, staging, production) on top of it. A Flux `Kustomization` then points Flux at the overlay directory for one environment:
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -97,17 +107,17 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./clusters/production
+  path: ./apps/production
   prune: true
 ```
 
-The Kustomize Controller applies the resolved output of base plus overlay to the cluster, so the same base manifests can produce different results per environment without duplicating YAML.
+This Flux `Kustomization` (a Flux object, not the `kustomization.yaml` file Kustomize reads) uses its own path, `./apps/production`, which stays separate from the `clusters/` path that bootstrap manages. The Kustomize Controller applies the resolved output of base plus overlay to the cluster, so the same base manifests can produce different results per environment without duplicating YAML.
 
-> **Note:** All three approaches share the same source of truth — the Git repository — and the same enforcement mechanism: Flux's reconciliation loop. Which one you pick depends on how the software you're deploying is packaged, not on any difference in how Flux treats them.
+> **Note:** All three approaches share the same source of truth (the Git repository) and the same enforcement mechanism: Flux's reconciliation loop. Which one you pick depends on how the software you're deploying is packaged, not on any difference in how Flux treats them.
 
 ## Keeping images fresh: Image Automation
 
-Even with everything else declarative, someone still has to bump the image tag in the manifest whenever a new container image is built. Flux's **Image Automation** feature closes this last gap: it watches a container registry, and when a new image matching your policy appears, it commits the updated tag to your Git repository itself. You still never touch the cluster directly — Flux just extends the same Git-as-source-of-truth model one step further back, into the build pipeline.
+Even with everything else declarative, someone still has to bump the image tag in the manifest whenever a new container image is built. Flux's **Image Automation** feature closes this last gap: it watches a container registry, and when a new image matching your policy appears, it commits the updated tag to your Git repository itself. You still never touch the cluster directly. Flux just extends the same Git-as-source-of-truth model one step further back, into the build pipeline.
 
 ## Further reading
 
@@ -125,6 +135,6 @@ Even with everything else declarative, someone still has to bump the image tag i
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

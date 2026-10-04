@@ -1,14 +1,14 @@
 ---
 title: "Modifying the Helm chart and overriding the default values"
 kicker: "FLUX CD · SECTION 3 · LECTURE 3"
-description: "This lecture demonstrates how to override Helm chart default values using Flux CD's HelmRelease custom resource. You'll create a ConfigMap template in your Helm chart to"
+description: "This lecture demonstrates how to override Helm chart default values using Flux CD's HelmRelease custom resource. You'll create a ConfigMap template in your Helm chart to supply a custom HTML welcome page for Nginx, then inject that value through the HelmRelease manifest."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
 # Modifying the Helm chart and overriding the default values
 
-*Section 3, Lecture 3 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 3, Lecture 3, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -18,7 +18,7 @@ description: "This lecture demonstrates how to override Helm chart default value
 - Add a ConfigMap template to a chart and mount it into a Deployment to serve custom content
 - Choose between inline values and `spec.chart.spec.valuesFiles`, and where each resolves its paths from
 - Bump a chart's version to signal Flux CD that a chart change needs deploying
-- Diagnose common failures — stale CRDs, missing ConfigMap mounts, and an Ingress left disabled from an earlier lecture
+- Diagnose common failures: a removed HelmRelease API version, missing ConfigMap mounts, and an Ingress left disabled from an earlier lecture
 
 ## Overview
 
@@ -32,7 +32,7 @@ This lecture demonstrates how to override Helm chart default values using Flux C
 
 **HelmRelease Custom Resource:** Flux CD's HelmRelease resource defines how and when to deploy a Helm chart. It allows you to specify value overrides inline (using `spec.values`) or from separate files (using `spec.chart.spec.valuesFiles`).
 
-**Inline vs File-Based Values:** The `spec.values` field (at the top level of `spec`) lets you define values directly in the manifest. If you prefer to manage values in separate YAML files, use `spec.chart.spec.valuesFiles`, which accepts a list of file paths relative to the **root of the Git repository the chart comes from** — not to the chart directory. Later files in the list override earlier ones. Both approaches achieve the same result—providing custom values to the chart.
+**Inline vs File-Based Values:** The `spec.values` field (at the top level of `spec`) lets you define values directly in the manifest. If you prefer to manage values in separate YAML files, use `spec.chart.spec.valuesFiles`, which accepts a list of file paths relative to the **root of the Git repository the chart comes from**, not to the chart directory. Later files in the list override earlier ones. Both approaches achieve the same result: providing custom values to the chart.
 
 ## Commands Used
 
@@ -84,7 +84,7 @@ data:
 
 ### Updated Deployment Template (charts/nginx/templates/deployment.yaml)
 
-The chart that `helm create` scaffolds wraps every optional block in `{{- with .Values.X }}`, and it already ships `volumeMounts` and `volumes` blocks driven from values. Because the ConfigMap we mount is named after the release, a values file cannot supply it — so we replace those two blocks with literal ones. Only the pod spec is shown; everything else in the deployment stays as scaffolded, including the probes and the `resources` block:
+The chart that `helm create` scaffolds wraps every optional block in `{{- with .Values.X }}`, and it already ships `volumeMounts` and `volumes` blocks driven from values. Because the ConfigMap we mount is named after the release, a values file cannot supply it, so we replace those two blocks with literal ones. Only the pod spec is shown; everything else in the deployment stays as scaffolded, including the probes and the `resources` block:
 
 ```yaml
     spec:
@@ -140,13 +140,13 @@ appVersion: "1.16.0"
 ```
 
 **Explanation:**
-- The chart version increments from `0.1.0` (what `helm create` scaffolds) to `0.2.0` — a **minor bump**, the middle digit. This signals to Flux CD that the chart has changed and should be redeployed.
+- The chart version increments from `0.1.0` (what `helm create` scaffolds) to `0.2.0`: a **minor bump**, the middle digit. This signals to Flux CD that the chart has changed and should be redeployed.
 - Helm uses semantic versioning: `MAJOR.MINOR.PATCH`.
 - `appVersion` describes the application packaged by the chart, not the chart itself, so it is left unchanged.
 
 ### HelmRelease (clusters/my-cluster/nginx-helm-release.yaml)
 
-The HelmRelease must live under the path Flux was bootstrapped against — here `clusters/my-cluster/`. A HelmRelease placed outside that path is never reconciled. This lecture adds one key, `indexHtml`, to the `values:` block the previous lecture created:
+The HelmRelease must live under the path Flux was bootstrapped against, here `clusters/my-cluster/`. A HelmRelease placed outside that path is never reconciled. This lecture adds one key, `indexHtml`, to the `values:` block of the HelmRelease shown at the start of this lecture. If you come straight from the previous lecture, your HelmRelease has no `values:` block yet: add one under `spec`, as below.
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -179,14 +179,14 @@ spec:
       port: 80
     indexHtml: |-
       <!doctype html>
-        <html>
-        <head>
-          <title>My Custom Page</title>
-        </head>
-        <body>
-          <h1>Welcome to my custom Nginx page!</h1>
-        </body>
-        </html>
+      <html>
+      <head>
+        <title>My Custom Page</title>
+      </head>
+      <body>
+        <h1>Welcome to my custom Nginx page!</h1>
+      </body>
+      </html>
 ```
 
 **Explanation:**
@@ -194,11 +194,11 @@ spec:
 - `spec.interval: 10m` tells Flux how often to re-evaluate this HelmRelease on its own.
 - `spec.chart.spec.sourceRef` points to the GitRepository containing the chart.
 - `spec.values` provides inline value overrides. The key `indexHtml` matches the value used in the ConfigMap template.
-- The `|-` symbol denotes a literal block scalar in YAML—whitespace and newlines are preserved, making it ideal for HTML.
+- The `|-` symbol denotes a literal block scalar in YAML: whitespace and newlines are preserved, making it ideal for HTML.
 
 ### Alternative: Using valuesFiles
 
-If you prefer to store values separately, you can use `spec.chart.spec.valuesFiles` instead. Put `values-custom.yaml` at the **root** of your repository — that is where Flux will look for it:
+If you prefer to store values separately, you can use `spec.chart.spec.valuesFiles` instead. Put `values-custom.yaml` at the **root** of your repository, because that is where Flux will look for it. Since `valuesFiles` replaces the chart's own `values.yaml` rather than adding to it, list that file first, by its path from the repository root:
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -217,12 +217,13 @@ spec:
         namespace: flux-system
       interval: 1m
       valuesFiles:
+        - charts/nginx/values.yaml
         - values-custom.yaml
 ```
 
 **Explanation:**
-- `spec.chart.spec.valuesFiles` takes a list of paths to YAML files. These paths are relative to the **root of the Git repository** the chart is read from, not to the chart directory — so listing `values.yaml` here would look for `values.yaml` at the repository root, not `charts/nginx/values.yaml`, and the HelmChart would fail to build.
-- The chart's own `values.yaml` is always loaded as the base; you do not list it.
+- `spec.chart.spec.valuesFiles` takes a list of paths to YAML files. These paths are relative to the **root of the Git repository** the chart is read from, not to the chart directory. Listing plain `values.yaml` here would look for `values.yaml` at the repository root, not `charts/nginx/values.yaml`, and the HelmChart would fail to build.
+- If you set `valuesFiles`, list the chart's `values.yaml` first, by its path from the repository root. The list replaces the chart's own defaults; it does not merge with them, so leaving it out drops settings such as the Ingress you enabled in the previous lecture.
 - Flux merges values from multiple files, with later files overriding earlier ones.
 - This approach is useful when managing many environment-specific value overrides.
 
@@ -231,7 +232,7 @@ spec:
 1. **Prepare the repository:** Check out main, pull latest, and create a feature branch.
 2. **Add the ConfigMap template:** Create `charts/nginx/templates/configmap.yaml` to hold custom HTML.
 3. **Update the Deployment:** Replace the scaffold's value-driven `volumeMounts` and `volumes` blocks in `deployment.yaml` with literal ones that mount the ConfigMap.
-4. **Bump the chart version:** Increment the version in `Chart.yaml` — `0.1.0` to `0.2.0` — to trigger reconciliation.
+4. **Bump the chart version:** Increment the version in `Chart.yaml` (`0.1.0` to `0.2.0`) to trigger reconciliation.
 5. **Define values in HelmRelease:** Add `indexHtml` under `spec.values` to supply the HTML content from a single source of truth.
 6. **Commit and merge:** Push the branch, create a merge request, and merge to main.
 7. **Reconcile:** Run `flux reconcile` commands to apply changes immediately.
@@ -240,10 +241,11 @@ spec:
 ## Common Issues and Solutions
 
 **Error: "no matches for kind 'HelmRelease' in version 'helm.toolkit.fluxcd.io/v2beta1'"**
-This occurs when your cluster has old Flux CRDs. Upgrade Flux with:
+Your manifest uses an API version that Flux removed in version 2.7. Upgrading Flux or its CRDs cannot bring `v2beta1` back; the manifest itself has to change. Set `apiVersion: helm.toolkit.fluxcd.io/v2` in the HelmRelease file, commit and push, then reconcile:
 ```bash
-flux install --export | kubectl apply -f -
+flux reconcile kustomization flux-system --with-source
 ```
+The Section 2 lecture on migrating off the removed Flux beta APIs walks through this migration in full.
 
 **ConfigMap not mounted in the pod:**
 Verify the ConfigMap exists and is named correctly:
@@ -273,7 +275,7 @@ That is the ingress controller's default backend, which means no Ingress is rout
 kubectl get ingress -n default
 grep -A 6 "^ingress:" charts/nginx/values.yaml
 ```
-`ingress.enabled` must be `true` and `ingress.className` must match your controller (`nginx` for ingress-nginx). The ConfigMap change is unaffected by this — you can confirm the release itself is correct from inside the cluster:
+`ingress.enabled` must be `true` and `ingress.className` must match your controller (`nginx` for ingress-nginx). The ConfigMap change is unaffected by this. You can confirm the release itself is correct from inside the cluster:
 ```bash
 kubectl run curltest --rm -it --restart=Never --image=curlimages/curl -- \
   curl -s http://nginx.default.svc.cluster.local/
@@ -295,6 +297,6 @@ kubectl run curltest --rm -it --restart=Never --image=curlimages/curl -- \
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

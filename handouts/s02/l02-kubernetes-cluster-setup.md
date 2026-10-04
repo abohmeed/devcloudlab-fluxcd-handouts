@@ -8,7 +8,7 @@ description: "How to prepare a local Kubernetes cluster with kind, Docker, kubec
 
 # Kubernetes cluster setup
 
-*Section 2, Lecture 2 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 2, Lecture 2, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -23,7 +23,7 @@ description: "How to prepare a local Kubernetes cluster with kind, Docker, kubec
 
 | Approach | Examples | Best for |
 |---|---|---|
-| Managed Kubernetes service | Amazon EKS, Google GKE, Azure AKS, DigitalOcean Kubernetes | Production-like environments — the provider runs and upgrades the control plane |
+| Managed Kubernetes service | Amazon EKS, Google GKE, Azure AKS, DigitalOcean Kubernetes | Production-like environments (the provider runs and upgrades the control plane) |
 | Local cluster | **kind** (Kubernetes in Docker) | Fast, disposable clusters for development and for the labs in this course |
 
 A managed service removes the operational burden of running Kubernetes yourself, but it costs money and takes longer to spin up. For the labs in this course, a local **kind** cluster is faster to create and destroy, and it's free.
@@ -52,7 +52,7 @@ echo \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
-> **Since this video was recorded:** `apt-key add` and the `add-apt-repository` shorthand for third-party repositories were removed in Ubuntu 22.04+. The steps above are the current equivalent — the key is saved to `/etc/apt/keyrings/` and referenced with `signed-by` in the repository line; the video shows the older `apt-key`/`add-apt-repository` form.
+> **Since this video was recorded:** `apt-key` is deprecated on Ubuntu 22.04 and later, and Docker's install guide no longer uses it or the `add-apt-repository` shorthand. (`add-apt-repository` itself still ships.) The steps above follow the current guide: the key is saved to `/etc/apt/keyrings/` and referenced with `signed-by` in the repository line; the video shows the older `apt-key`/`add-apt-repository` form.
 
 Install Docker itself:
 
@@ -69,7 +69,7 @@ newgrp docker
 docker version
 ```
 
-On Windows or macOS, install [Docker Desktop](https://www.docker.com/products/docker-desktop/) instead — it bundles the Docker engine and doesn't need the steps above.
+On Windows or macOS, install [Docker Desktop](https://www.docker.com/products/docker-desktop/) instead. It bundles the Docker engine and doesn't need the steps above.
 
 ## Installing kubectl
 
@@ -92,7 +92,7 @@ sudo mv ./kind /usr/local/bin/kind
 kind version
 ```
 
-> **Note:** check the [kind releases page](https://github.com/kubernetes-sigs/kind/releases) for the current version number before running the first command — `v0.33.0` was current at the time of writing, and kind ships new releases regularly.
+> **Note:** check the [kind releases page](https://github.com/kubernetes-sigs/kind/releases) for the current version number before running the first command. `v0.33.0` was current at the time of writing, and kind ships new releases regularly.
 
 ## Creating a cluster with ingress enabled
 
@@ -133,8 +133,10 @@ kind automatically points `kubectl` at the new cluster, so you can use `kubectl`
 With the cluster running, install the NGINX ingress controller build that kind publishes for its own clusters:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.15.1/deploy/static/provider/kind/deploy.yaml
 ```
+
+> **Since this video was recorded:** the video applies this file from the project's `main` branch. The URL above is pinned to `controller-v1.15.1`, so it always installs the same version. The ingress-nginx project was retired in March 2026 and its repository is now archived; v1.15.1 is its final release, and existing installs keep working.
 
 Wait for the controller pod to become ready before deploying anything that depends on it:
 
@@ -149,7 +151,7 @@ Once that command returns, the cluster can route `Ingress` objects to your servi
 
 ## Using a managed cluster instead
 
-If you'd rather skip local cluster management and use Amazon EKS, Google GKE, Azure AKS, or DigitalOcean Kubernetes, kind isn't involved at all. Every provider has its own command to point `kubectl` at the cluster it created for you — for example, EKS uses `aws eks update-kubeconfig`. Follow your provider's documentation for that one step; everything else in this course works the same way once `kubectl` is pointed at a working cluster.
+If you'd rather skip local cluster management and use Amazon EKS, Google GKE, Azure AKS, or DigitalOcean Kubernetes, kind isn't involved at all. Every provider has its own command to point `kubectl` at the cluster it created for you. For example, EKS uses `aws eks update-kubeconfig`. Follow your provider's documentation for that one step; everything else in this course works the same way once `kubectl` is pointed at a working cluster.
 
 ## Further reading
 
@@ -167,6 +169,6 @@ If you'd rather skip local cluster management and use Amazon EKS, Google GKE, Az
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>

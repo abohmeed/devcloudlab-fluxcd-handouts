@@ -1,4 +1,4 @@
-/* DevCloudLab — Flux CD handouts
+/* DevCloudLab, Flux CD handouts
    Brand palette sampled from the DevCloudLab mark:
      blue  #2d6da4   teal #3ba79e   orange #e99a63   navy #2b3557          */
 
@@ -211,7 +211,7 @@ code {
   opacity: 1;
 }
 
-/* Touch devices have no hover — keep the button permanently visible. */
+/* Touch devices have no hover, keep the button permanently visible. */
 @media (hover: none) {
   .dcl-copy { opacity: 1; }
 }

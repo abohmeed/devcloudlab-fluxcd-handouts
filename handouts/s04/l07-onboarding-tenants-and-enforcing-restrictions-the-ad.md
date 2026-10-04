@@ -1,14 +1,14 @@
 ---
-title: "Onboarding tenants and enforcing restrictions — the admin team"
+title: "Onboarding tenants and enforcing restrictions: the admin team"
 kicker: "FLUX CD · SECTION 4 · LECTURE 7"
-description: "This lecture covers how an admin team uses Flux CD to onboard development teams into a multi-cluster environment while enforcing access restrictions. The key concept is using"
+description: "This lecture covers how an admin team uses Flux CD to onboard development teams into a multi-cluster environment while enforcing access restrictions. It combines Kubernetes RBAC with Flux CD Kustomization resources so each tenant team deploys only into its own namespace."
 ---
 
 <a href="https://devcloudlab.com"><img src="../../assets/img/devcloudlab-logo.png" alt="DevCloudLab" height="72"></a>
 
-# Onboarding tenants and enforcing restrictions — the admin team
+# Onboarding tenants and enforcing restrictions: the admin team
 
-*Section 4, Lecture 7 — from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
+*Section 4, Lecture 7, from the **Flux CD** course by [DevCloudLab](https://devcloudlab.com).*
 
 ---
 
@@ -21,8 +21,10 @@ description: "This lecture covers how an admin team uses Flux CD to onboard deve
 - Verify a deployed tenant application by ingress hostname and HTTP status code
 
 > **Replace `<your-gitlab-username>` with your own GitLab username** everywhere it
-> appears below. The repositories used in the lecture are private, so use your own
-> admin repository and your own copy of the weather app repository.
+> appears below. Use your own admin repository (the one you built in the previous
+> lectures) and your own copy of the weather app repository. The finished weather app
+> repository, [gitlab.com/abohmeed/myweatherapp](https://gitlab.com/abohmeed/myweatherapp),
+> is public, so you can fork it if you did not build your own in the previous lecture.
 
 ## Lecture Summary
 
@@ -53,10 +55,10 @@ RBAC in Kubernetes controls who can do what. In this scenario:
 
 The `Kustomization` resource from `kustomize.toolkit.fluxcd.io/v1` tells Flux CD:
 - Which Git repository to watch for changes
-- Which Kustomize patches to apply
+- Which path in that repository to apply (the per-environment patches that change this path live in plain Kustomize files, not in the Flux resource)
 - How often to reconcile (sync) changes
 
-This is different from vanilla Kustomize (`kustomize.config.k8s.io/v1beta1`), which is a file template tool.
+This is different from vanilla Kustomize (`kustomize.config.k8s.io/v1beta1`), which is the tool that shapes and patches manifests. In this lecture the patches live in plain Kustomize files, and the Flux Kustomization named `dev` is the object those patches change.
 
 ## Step-by-Step Walkthrough
 
@@ -81,7 +83,7 @@ flux create tenant dev --with-namespace=apps --export > ./tenants/base/dev/rbac.
 
 This command:
 - Tells Flux CD to create a tenant named "dev"
-- Constrains it to the "apps" namespace — the flag is `--with-namespace`, not
+- Constrains it to the "apps" namespace. The flag is `--with-namespace`, not
   `--namespace` (plain `--namespace` is the CLI's own request-scope flag, and using
   it here fails with `✗ with-namespace is required`)
 - Exports the YAML instead of applying it to the cluster
@@ -285,6 +287,10 @@ This vanilla Kustomize file:
 - References the base manifests in `../base/dev`
 - Applies the patch `dev-patch.yaml` to override the path
 
+The patch lives here, in the plain Kustomize file, because vanilla Kustomize is the tool
+that changes manifests. The Flux Kustomization `dev` does not carry the patch; it is the
+object being patched. Flux then delivers the result to the cluster through GitOps.
+
 ### 9. Create Staging Cluster Configuration
 
 ```bash
@@ -310,7 +316,25 @@ This Flux CD Kustomization resource:
 - Reconciles every 5 minutes
 - Automatically prunes resources that are removed from Git
 
-### 10. Create Authentication Secret
+### 10. Commit, Push and Let Flux Create the Namespace
+
+The lecture commits as it goes (after `rbac.yaml`, after the base files, and now after
+the staging files). Make sure everything is pushed, then have Flux apply it:
+
+```bash
+git add ./tenants/ ./clusters/staging/
+git commit -m "Configure staging cluster tenant deployment"
+git push
+
+flux reconcile kustomization flux-system --with-source -n flux-system
+kubectl get ns apps
+```
+
+`kubectl get ns apps` must list the namespace before you continue. The Secret in the
+next step lives in `apps`, and until Flux has created that namespace the command fails
+with `namespaces "apps" not found`. That is why the Secret is created last.
+
+### 11. Create Authentication Secret
 
 ```bash
 flux create secret git gitlab-auth \
@@ -326,25 +350,47 @@ This command:
 - The secret is not stored in Git (for security)
 - Flux CD uses this secret to clone the dev team's repository and pull Helm charts
 
-The weather service needs a second secret in the same namespace — its RapidAPI
-key:
+The weather service needs a second secret in the same namespace: its RapidAPI key.
 
 ```bash
 kubectl -n apps create secret generic api-key \
   --from-literal=values.yaml="apikey: <your-rapidapi-key>"
 ```
 
-Use your own key from [rapidapi.com](https://rapidapi.com/) — subscribe to the
+Use your own key from [rapidapi.com](https://rapidapi.com/): subscribe to the
 WeatherAPI.com API and paste the key in place of `<your-rapidapi-key>`. The dev
-team's repository commits only that placeholder; the `weatherapp-weather`
-HelmRelease reads this secret through `valuesFrom`, so the real key is created
-against the cluster and never stored in Git — the same rule as `gitlab-auth`.
+team's repository commits only a placeholder; the `weatherapp-weather` HelmRelease
+reads this secret through `valuesFrom`, so the real key is created against the
+cluster and never stored in Git (the same rule as `gitlab-auth`).
 
-### 11. Repeat for Production
+### 12. Reconcile and Verify Staging
 
-The process for the production cluster is nearly identical, with two changes:
+```bash
+flux reconcile kustomization tenants -n flux-system
+flux reconcile source git dev -n apps
+flux reconcile kustomization dev -n apps
+kubectl get helmrelease -n apps
+```
 
-**Production patch:**
+After a few seconds you should see three Helm releases, one per weather app chart.
+
+### 13. Repeat for Production
+
+Most of the work is already done. Switch to the production cluster first:
+
+```bash
+kubectl config use-context kind-production
+```
+
+Copy the staging patch and kustomization file, then change the patch's path to
+`./kustomize/production`. The kustomization file needs no changes:
+
+```bash
+cp ./tenants/staging/dev-patch.yaml ./tenants/production/dev-patch.yaml
+cp ./tenants/staging/kustomization.yaml ./tenants/production/kustomization.yaml
+```
+
+**Production patch** (`tenants/production/dev-patch.yaml`):
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -356,7 +402,7 @@ spec:
   path: ./kustomize/production
 ```
 
-**Production cluster configuration:**
+**Production cluster configuration** (`clusters/production/tenants.yaml`):
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -371,6 +417,40 @@ spec:
     name: flux-system
   path: ./tenants/production
   prune: true
+```
+
+Commit, push, and let Flux create the `apps` namespace on production:
+
+```bash
+git add ./tenants/production/ ./clusters/production/
+git commit -m "Configure production cluster tenant deployment"
+git push
+
+flux reconcile kustomization flux-system --with-source -n flux-system
+kubectl get ns apps
+```
+
+Secrets are not in Git, so the production cluster does not have them yet. Once
+`apps` exists there, create **both** Secrets again, exactly as on staging:
+
+```bash
+flux create secret git gitlab-auth \
+  --url=https://gitlab.com/<your-gitlab-username>/myweatherapp.git \
+  --username=<your-gitlab-username> \
+  --password=<your-personal-access-token> \
+  --namespace=apps
+
+kubectl -n apps create secret generic api-key \
+  --from-literal=values.yaml="apikey: <your-rapidapi-key>"
+```
+
+Then reconcile and check the releases:
+
+```bash
+flux reconcile kustomization tenants -n flux-system
+flux reconcile source git dev -n apps
+flux reconcile kustomization dev -n apps
+kubectl get helmrelease -n apps
 ```
 
 ## Complete File Structure
@@ -425,7 +505,7 @@ kubectl describe helmrelease -n apps
 
 ### Access the Application
 
-The KinD clusters already publish their ingress controllers on the host — staging
+The KinD clusters already publish their ingress controllers on the host: staging
 on port 8080, production on port 8081. **Do not run `kubectl port-forward` onto
 those ports:** they are already bound, and the command fails with
 `address already in use`.
@@ -441,8 +521,8 @@ kubectl get ingress -n apps
 
 You should see host `weatherapp.staging` (and `weatherapp.production` on the other
 cluster). Add one line to the `/etc/hosts` file of the machine running your
-browser, pointing both names at the machine running the clusters — `127.0.0.1` if
-that is the same machine, otherwise its IP address:
+browser, pointing both names at the machine running the clusters (`127.0.0.1` if
+that is the same machine, otherwise its IP address):
 
 ```bash
 sudo sh -c 'echo "127.0.0.1 weatherapp.staging weatherapp.production" >> /etc/hosts'
@@ -453,8 +533,8 @@ Then open:
 - staging: `http://weatherapp.staging:8080`
 - production: `http://weatherapp.production:8081`
 
-To prove the route without a browser — `302` is the app redirecting to `/login`,
-`404` means the Host header matched no ingress rule:
+To prove the route without a browser (`302` is the app redirecting to `/login`,
+`404` means the Host header matched no ingress rule):
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: weatherapp.staging' http://localhost:8080/
@@ -491,6 +571,6 @@ In this lecture:
 
 <p align="center">
   <strong>Built by DevCloudLab</strong><br>
-  Hands-on cloud-native courses — Kubernetes, GitOps, CI/CD and the cloud.<br>
+  Hands-on cloud-native courses: Kubernetes, GitOps, CI/CD and the cloud.<br>
   <a href="https://devcloudlab.com"><strong>Visit DevCloudLab.com →</strong></a>
 </p>
