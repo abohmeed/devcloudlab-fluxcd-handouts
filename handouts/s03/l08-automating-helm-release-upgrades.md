@@ -12,6 +12,11 @@ description: "This lecture explores how Flux CD automates Helm chart upgrades us
 
 ---
 
+> **Correction:** near the start (about 0:27) the video says that changing the chart
+> version with every change "could be meaningful in many cases". It should say the
+> opposite: in a development environment, bumping the chart version on every change is
+> **not practical** in many cases. That is the problem this lecture solves.
+
 ## What you'll learn
 
 - Choose between `reconcileStrategy: ChartVersion` and `Revision` depending on whether a chart's source is a Git repository

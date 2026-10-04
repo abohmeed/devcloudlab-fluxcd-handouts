@@ -12,6 +12,10 @@ description: "If you've built Flux manifests using this course, they work fine o
 
 ---
 
+> **Correction:** in a few places (around 1:04, 3:10 and 3:20) the video can be heard
+> as "v1beta1". The removed source and notification APIs are `v1beta2`. The mapping
+> table below has the correct versions.
+
 ## What you'll learn
 
 - Identify which Flux beta APIs were removed in v2.7.0 and their stable replacements

@@ -12,6 +12,11 @@ description: "This lecture covers how an admin team uses Flux CD to onboard deve
 
 ---
 
+> **Correction:** at about 7:00 the video says the patches need the Flux CD
+> Kustomization resource. That is backwards. The patches live in a plain (vanilla)
+> Kustomize file, and the Flux CD Kustomization named `dev` is the object those patches
+> change. Key Concepts below has the correct explanation.
+
 ## What you'll learn
 
 - Generate tenant RBAC (namespace, service account, RoleBinding) with `flux create tenant`
